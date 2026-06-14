@@ -1,0 +1,31 @@
+import os
+import json
+import requests
+
+# Load the board data from JSON
+with open("/home/phil/.gemini/antigravity/scratch/analysis_project/bounty-helix/workspace/CaptainTimmeow_ai-bounty-board/board.json") as f:
+    board_data = json.load(f)
+
+# Function to hide a tool from the board
+def hide_tool(tool_id):
+    # Find the tool in the board data
+    tool = next((t for t in board_data["tools"] if t["id"] == tool_id), None)
+    if tool:
+        tool["hidden"] = True
+        # Save the updated board data
+        with open("/home/phil/.gemini/antigravity/scratch/analysis_project/bounty-helix/workspace/CaptainTimmeow_ai-bounty-board/board.json", "w") as f:
+            json.dump(board_data, f)
+
+# Function to restore a hidden tool to the board
+def restore_tool(tool_id):
+    # Find the tool in the board data
+    tool = next((t for t in board_data["tools"] if t["id"] == tool_id), None)
+    if tool and tool["hidden"]:
+        tool["hidden"] = False
+        # Save the updated board data
+        with open("/home/phil/.gemini/antigravity/scratch/analysis_project/bounty-helix/workspace/CaptainTimmeow_ai-bounty-board/board.json", "w") as f:
+            json.dump(board_data, f)
+
+# Example usage
+hide_tool("tool123")
+restore_tool("tool123")
