@@ -1,21 +1,19 @@
+import os
 import json
 import re
-import pathlib
-from typing import List, Dict
+from pathlib import Path
+from typing import List
 
-def parse_log_file(log_file_path: str) -> List[Dict]:
-    with open(log_file_path, 'r') as file:
+def get_last_20_error_lines(log_file: Path) -> List[str]:
+    with open(log_file, 'r') as file:
         lines = file.readlines()
-    error_messages = []
-    for line in lines[-20:]:  # Get the last 20 lines
-        if 'ERROR' in line:
-            error_messages.append(line.strip())
-    return error_messages
+    error_lines = [line for line in lines if 'ERROR' in line]
+    return error_lines[-20:] if len(error_lines) > 20 else error_lines
 
 def main():
-    log_file_path = 'path/to/helix/log/file.log'
-    error_messages = parse_log_file(log_file_path)
-    print(json.dumps(error_messages, indent=2))
+    log_file = Path('/path/to/helix/log/file.log')
+    error_lines = get_last_20_error_lines(log_file)
+    print(json.dumps(error_lines))
 
 if __name__ == '__main__':
     main()

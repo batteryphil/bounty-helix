@@ -1344,6 +1344,18 @@ BOUNTY_WORKFLOW_TOOLS = [
     },
 ]
 
+
+# ── Workspace Tools ───────────────────────────────────────────────────
+WORKSPACE_TOOLS = [
+    {"name": "ws_tree", "description": "Show the file tree of the cloned repo. ALWAYS call this first after cloning to understand the structure.", "parameters": {"type": "object", "properties": {"slug": {"type": "string"}, "depth": {"type": "integer", "description": "Depth (default 2)"}}, "required": ["slug"]}},
+    {"name": "ws_ls", "description": "List files in the cloned repo root or a subdirectory.", "parameters": {"type": "object", "properties": {"slug": {"type": "string"}, "subdir": {"type": "string"}}, "required": ["slug"]}},
+    {"name": "ws_read", "description": "Read a source file from the cloned repo. Use ws_tree() first to find the path.", "parameters": {"type": "object", "properties": {"slug": {"type": "string"}, "filepath": {"type": "string", "description": "Relative path inside repo e.g. 'src/main.py'"}}, "required": ["slug", "filepath"]}},
+    {"name": "ws_run", "description": "Run a shell command inside the cloned repo (tests, linting, python scripts). e.g. ws_run(slug, 'python3 -m pytest -x -q')", "parameters": {"type": "object", "properties": {"slug": {"type": "string"}, "command": {"type": "string"}, "timeout": {"type": "integer"}}, "required": ["slug", "command"]}},
+    {"name": "ws_write", "description": "Write the fixed source file directly into the cloned repo. Use this to implement your fix.", "parameters": {"type": "object", "properties": {"slug": {"type": "string"}, "filepath": {"type": "string", "description": "Relative path e.g. 'src/utils.py'"}, "content": {"type": "string", "description": "Full corrected file content"}}, "required": ["slug", "filepath", "content"]}},
+    {"name": "ws_diff", "description": "Get the git diff of all changes in the cloned repo. Use this to generate your PATCH.diff after writing the fix.", "parameters": {"type": "object", "properties": {"slug": {"type": "string"}}, "required": ["slug"]}},
+    {"name": "ws_install_deps", "description": "Install the repo dependencies (pip/npm) so tests can run.", "parameters": {"type": "object", "properties": {"slug": {"type": "string"}}, "required": ["slug"]}},
+]
+
 # ── Toolset Registry ─────────────────────────────────────────────────
 #
 # Maps toolset names to their constituent tool declaration lists.
@@ -1359,12 +1371,12 @@ TOOLSETS = {
     "browser": {
         "description": "Web browsing and page interaction",
         "tools": BROWSER_TOOLS,
-        "default": False,
+        "default": True,
     },
     "git": {
         "description": "Local Git repository operations (status, diff, commit, push, pull, log, clone)",
         "tools": GIT_TOOLS,
-        "default": False,
+        "default": True,
     },
     "github": {
         "description": "GitHub API — search repos, manage issues, PRs, and comments",
@@ -1379,6 +1391,11 @@ TOOLSETS = {
     "bounty": {
         "description": "Bounty workflow — claim, clone, run, patch, submit PRs",
         "tools": BOUNTY_WORKFLOW_TOOLS,
+        "default": True,
+    },
+    "workspace": {
+        "description": "Workspace tools — tree, read, write, run, diff inside cloned repos",
+        "tools": WORKSPACE_TOOLS,
         "default": True,
     },
     "social": {
@@ -1474,6 +1491,7 @@ TOOL_DECLARATIONS = (
     + GITHUB_TOOLS
     + ISSUEHUNT_TOOLS
     + BOUNTY_WORKFLOW_TOOLS
+    + WORKSPACE_TOOLS
     + MOLTBOOK_TOOLS
     + EMAIL_TOOLS
     + CALENDAR_TOOLS
