@@ -35,3 +35,21 @@ logs/*.log
 # Secrets
 .env
 *.token
+
+# Runtime files — not for repo
+logs/
+data/status.json
+data/pulse_count.txt
+data/curiosity_knowledge.jsonl
+data/curiosity_asked.json
+data/experience_tuples.jsonl
+data/evolution_journal.jsonl
+data/meta_snapshots.jsonl
+data/co_occurrence_state.json
+data/affect_field.json
+data/reflections.jsonl
+data/memory/
+data/spatial/
+data/beliefs/
+data/notes.json
+data/scratchpad/
