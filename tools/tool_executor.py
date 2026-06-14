@@ -46,7 +46,7 @@ BLOCKED_COMMANDS = {"rm -rf /", "shutdown", "reboot", "mkfs", "dd if=", ":(){", 
 BLOCKED_WRITE_FILES = {"daemon.py", "main.py", "pulse_loop.py", "physics_engine.py"}
 MAX_FILE_READ = 2_000_000  # 2MB
 MAX_FILE_WRITE = 500_000   # 500KB
-TERMINAL_TIMEOUT = 30      # seconds
+TERMINAL_TIMEOUT = 120      # seconds
 
 
 @dataclass
@@ -99,8 +99,8 @@ class ToolExecutor:
         from tools.tool_registry import registry
         from tools.tool_declarations import (
             CORE_TOOLS, TOOLSET_MANAGEMENT_TOOLS,
-            BROWSER_TOOLS, GIT_TOOLS, GITHUB_TOOLS,
-            MOLTBOOK_TOOLS, EMAIL_TOOLS, CALENDAR_TOOLS,
+            BROWSER_TOOLS, GIT_TOOLS, GITHUB_TOOLS, BOUNTY_WORKFLOW_TOOLS,
+            BOUNTY_WORKFLOW_TOOLS, MOLTBOOK_TOOLS, EMAIL_TOOLS, CALENDAR_TOOLS,
             DRIVE_TOOLS, TASKS_TOOLS, DESKTOP_TOOLS,
         )
         self._registry = registry
@@ -177,6 +177,18 @@ class ToolExecutor:
             "issuehunt_search": self._fc_issuehunt_search,
             "issuehunt_top_bounties": self._fc_issuehunt_top_bounties,
             "issuehunt_save_opportunities": self._fc_issuehunt_save_opportunities,
+            "bounty_easy_search": self._fc_bounty_easy_search,
+            "bounty_status": self._fc_bounty_status,
+            "bounty_claim": self._fc_bounty_claim,
+            "bounty_clone_repo": self._fc_bounty_clone_repo,
+            "bounty_run": self._fc_bounty_run,
+            "bounty_write_plan": self._fc_bounty_write_plan,
+            "bounty_write_patch": self._fc_bounty_write_patch,
+            "bounty_write_pr": self._fc_bounty_write_pr,
+            "bounty_apply_patch": self._fc_bounty_apply_patch,
+            "bounty_submit": self._fc_bounty_submit,
+            "bounty_move": self._fc_bounty_move,
+            "bounty_read_plan": self._fc_bounty_read_plan,
             "github_issue": self._fc_github_issue,
             "github_create_issue": self._fc_github_create_issue,
             "github_comment": self._fc_github_comment,
@@ -265,6 +277,13 @@ class ToolExecutor:
             check_fn=_check_github,
             requires_env=["GITHUB_TOKEN"],
             description="GitHub API — search repos, manage issues, PRs",
+        )
+        registry.register_batch(
+            toolset="bounty",
+            tools=BOUNTY_WORKFLOW_TOOLS,
+            handlers={**github_handlers},
+            check_fn=_check_github,
+            description="Bounty workflow — claim, clone, run, patch, submit",
         )
         registry.register_batch(
             toolset="social",
@@ -740,6 +759,56 @@ class ToolExecutor:
     def _fc_issuehunt_save_opportunities(self, args: dict) -> str:
         from tools.issuehunt import issuehunt_save_opportunities
         return issuehunt_save_opportunities(args.get("opportunities", []))
+
+    def _fc_bounty_easy_search(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_easy_search
+        return bounty_easy_search(args.get("max_results", 10))
+
+    def _fc_bounty_status(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_status
+        return bounty_status()
+
+    def _fc_bounty_claim(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_claim
+        return bounty_claim(args.get("repo",""), args.get("issue_num",0),
+            args.get("title",""), args.get("labels",""),
+            args.get("reward_estimate","$0"), args.get("difficulty","unknown"))
+
+    def _fc_bounty_clone_repo(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_clone_repo
+        return bounty_clone_repo(args.get("repo",""))
+
+    def _fc_bounty_run(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_run
+        return bounty_run(args.get("slug",""), args.get("command",""))
+
+    def _fc_bounty_write_plan(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_write_plan
+        return bounty_write_plan(args.get("slug",""), args.get("content",""))
+
+    def _fc_bounty_write_patch(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_write_patch
+        return bounty_write_patch(args.get("slug",""), args.get("content",""))
+
+    def _fc_bounty_write_pr(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_write_pr
+        return bounty_write_pr(args.get("slug",""), args.get("content",""))
+
+    def _fc_bounty_apply_patch(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_apply_patch
+        return bounty_apply_patch(args.get("slug",""))
+
+    def _fc_bounty_submit(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_submit
+        return bounty_submit(args.get("slug",""))
+
+    def _fc_bounty_move(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_move
+        return bounty_move(args.get("slug",""), args.get("status","submitted"))
+
+    def _fc_bounty_read_plan(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_read_plan
+        return bounty_read_plan(args.get("slug",""))
 
     def _fc_github_issue(self, args: dict) -> str:
         from tools import github_api as gh

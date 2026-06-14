@@ -1239,6 +1239,87 @@ TOOLSET_MANAGEMENT_TOOLS = [
 ]
 
 
+
+# ── Bounty Workflow Tools ─────────────────────────────────────────────
+BOUNTY_WORKFLOW_TOOLS = [
+    {
+        "name": "bounty_easy_search",
+        "description": "Search for easy, quick-win bounties: 'good first issue' + bounty label, docs, tests. Highest success probability.",
+        "parameters": {"type": "object", "properties": {"max_results": {"type": "integer"}}, "required": []},
+    },
+    {
+        "name": "bounty_status",
+        "description": "Show a summary of all current bounty solutions (active, submitted, accepted, rejected). Check your pipeline.",
+        "parameters": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "bounty_claim",
+        "description": "Claim a bounty issue — creates solutions/active/<slug>/ with PLAN.md, PATCH.diff, PR_DESCRIPTION.md stubs.",
+        "parameters": {"type": "object", "properties": {
+            "repo": {"type": "string", "description": "GitHub repo e.g. 'psf/requests'"},
+            "issue_num": {"type": "integer", "description": "Issue number"},
+            "title": {"type": "string"}, "labels": {"type": "string"},
+            "reward_estimate": {"type": "string"}, "difficulty": {"type": "string"},
+        }, "required": ["repo", "issue_num"]},
+    },
+    {
+        "name": "bounty_clone_repo",
+        "description": "Clone a GitHub repo into workspace/ so you can run and test code locally.",
+        "parameters": {"type": "object", "properties": {"repo": {"type": "string", "description": "GitHub repo slug e.g. 'psf/requests'"}}, "required": ["repo"]},
+    },
+    {
+        "name": "bounty_run",
+        "description": "Run a shell command inside the cloned repo. Use to reproduce bugs, run tests, verify fixes.",
+        "parameters": {"type": "object", "properties": {
+            "slug": {"type": "string", "description": "Bounty slug e.g. 'psf-requests-issue-1234'"},
+            "command": {"type": "string", "description": "Shell command to run"},
+        }, "required": ["slug", "command"]},
+    },
+    {
+        "name": "bounty_write_plan",
+        "description": "Write PLAN.md for a bounty: problem, root cause, fix approach, test plan.",
+        "parameters": {"type": "object", "properties": {
+            "slug": {"type": "string"}, "content": {"type": "string"},
+        }, "required": ["slug", "content"]},
+    },
+    {
+        "name": "bounty_write_patch",
+        "description": "Write PATCH.diff — the code fix as a unified diff.",
+        "parameters": {"type": "object", "properties": {
+            "slug": {"type": "string"}, "content": {"type": "string"},
+        }, "required": ["slug", "content"]},
+    },
+    {
+        "name": "bounty_write_pr",
+        "description": "Write PR_DESCRIPTION.md — the pull request body. IssueHunt attribution is auto-appended.",
+        "parameters": {"type": "object", "properties": {
+            "slug": {"type": "string"}, "content": {"type": "string"},
+        }, "required": ["slug", "content"]},
+    },
+    {
+        "name": "bounty_apply_patch",
+        "description": "Apply PATCH.diff to the cloned repo. Run bounty_run() after to verify.",
+        "parameters": {"type": "object", "properties": {"slug": {"type": "string"}}, "required": ["slug"]},
+    },
+    {
+        "name": "bounty_submit",
+        "description": "Submit completed bounty: auto-forks repo, pushes fix branch, opens PR. Full end-to-end submission.",
+        "parameters": {"type": "object", "properties": {"slug": {"type": "string"}}, "required": ["slug"]},
+    },
+    {
+        "name": "bounty_move",
+        "description": "Move a bounty solution to submitted/accepted/rejected folder.",
+        "parameters": {"type": "object", "properties": {
+            "slug": {"type": "string"}, "status": {"type": "string", "description": "submitted, accepted, rejected, or active"},
+        }, "required": ["slug", "status"]},
+    },
+    {
+        "name": "bounty_read_plan",
+        "description": "Read the PLAN.md for a bounty. Use this to resume work without reloading full context.",
+        "parameters": {"type": "object", "properties": {"slug": {"type": "string"}}, "required": ["slug"]},
+    },
+]
+
 # ── Toolset Registry ─────────────────────────────────────────────────
 #
 # Maps toolset names to their constituent tool declaration lists.
@@ -1269,6 +1350,11 @@ TOOLSETS = {
     "issuehunt": {
         "description": "IssueHunt bounty search — find and save paid open-source issues",
         "tools": ISSUEHUNT_TOOLS,
+        "default": True,
+    },
+    "bounty": {
+        "description": "Bounty workflow — claim, clone, run, patch, submit PRs",
+        "tools": BOUNTY_WORKFLOW_TOOLS,
         "default": True,
     },
     "social": {
@@ -1363,6 +1449,7 @@ TOOL_DECLARATIONS = (
     + GIT_TOOLS
     + GITHUB_TOOLS
     + ISSUEHUNT_TOOLS
+    + BOUNTY_WORKFLOW_TOOLS
     + MOLTBOOK_TOOLS
     + EMAIL_TOOLS
     + CALENDAR_TOOLS
