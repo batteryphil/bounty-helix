@@ -1,0 +1,77 @@
+╔══════════════════════════════════════════╗
+║     HELIX COGNITIVE DASHBOARD            ║
+║     http://127.0.0.1:5050             ║
+╚══════════════════════════════════════════╝
+  Log: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/logs/helix.log
+  Beliefs: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/beliefs
+  Spatial: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/spatial
+
+ * Serving Flask app 'dashboard'
+ * Debug mode: off
+╔══════════════════════════════════════════╗
+║     HELIX COGNITIVE DASHBOARD            ║
+║     http://127.0.0.1:5050             ║
+╚══════════════════════════════════════════╝
+  Log: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/logs/helix.log
+  Beliefs: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/beliefs
+  Spatial: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/spatial
+
+ * Serving Flask app 'dashboard'
+ * Debug mode: off
+╔══════════════════════════════════════════╗
+║     HELIX COGNITIVE DASHBOARD            ║
+║     http://0.0.0.0:5050             ║
+╚══════════════════════════════════════════╝
+  Log: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/logs/helix.log
+  Beliefs: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/beliefs
+  Spatial: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/spatial
+
+Traceback (most recent call last):
+  File "/home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/dashboard/dashboard.py", line 399, in <module>
+    main()
+  File "/home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/dashboard/dashboard.py", line 394, in main
+    app = create_app()
+          ^^^^^^^^^^^^
+  File "/home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/dashboard/dashboard.py", line 323, in create_app
+    from dashboard.dashboard_comms import get_comms
+ModuleNotFoundError: No module named 'dashboard.dashboard_comms'; 'dashboard' is not a package
+╔══════════════════════════════════════════╗
+║     HELIX COGNITIVE DASHBOARD            ║
+║     http://0.0.0.0:5050             ║
+╚══════════════════════════════════════════╝
+  Log: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/logs/helix.log
+  Beliefs: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/beliefs
+  Spatial: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/spatial
+
+ * Serving Flask app 'dashboard'
+ * Debug mode: off
+╔══════════════════════════════════════════╗
+║     HELIX COGNITIVE DASHBOARD            ║
+║     http://0.0.0.0:5050             ║
+╚══════════════════════════════════════════╝
+  Log: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/logs/helix.log
+  Beliefs: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/beliefs
+  Spatial: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/spatial
+
+ * Serving Flask app 'dashboard'
+ * Debug mode: off
+╔══════════════════════════════════════════╗
+║     HELIX COGNITIVE DASHBOARD            ║
+║     http://0.0.0.0:5050             ║
+╚══════════════════════════════════════════╝
+  Log: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/logs/helix.log
+  Beliefs: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/beliefs
+  Spatial: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/spatial
+
+ * Serving Flask app 'dashboard'
+ * Debug mode: off
+╔══════════════════════════════════════════╗
+║     HELIX COGNITIVE DASHBOARD            ║
+║     http://0.0.0.0:5050             ║
+╚══════════════════════════════════════════╝
+  Log: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/logs/helix.log
+  Beliefs: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/beliefs
+  Spatial: /home/phil/.gemini/antigravity/scratch/analysis_project/Helix-AGI/data/spatial
+
+ * Serving Flask app 'dashboard'
+ * Debug mode: off

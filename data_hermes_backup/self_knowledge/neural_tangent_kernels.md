@@ -1,0 +1,1 @@
+Neural Tangent Kernels: A Theoretical and Empirical Analysis of Gradient Descent for Deep Linear Neural Networks - This study shows that an LLM can, t

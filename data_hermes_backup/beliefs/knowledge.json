@@ -1,0 +1,68 @@
+[
+  {
+    "id": "b_950ce165",
+    "content": "ce of new AI products and models, such as the publicly available GPT-4/Gen2class models, which are now more accessible and open for use or modification by anyone.",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-10T12:58:33-05:00",
+    "last_accessed": "2026-06-10T12:58:33-05:00",
+    "access_count": 0,
+    "verifications": 1.0,
+    "stability_index": 0.4989,
+    "relations": [],
+    "memory_refs": [
+      533
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.7273,
+      "delta_omega": -0.0011,
+      "s_total": 0.0
+    }
+  },
+  {
+    "id": "b_2f5d8806",
+    "content": "AI is rapidly advancing and becoming more accessible.",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-11T01:45:53-05:00",
+    "last_accessed": "2026-06-11T01:45:53-05:00",
+    "access_count": 0,
+    "verifications": 1.0,
+    "stability_index": 0.5,
+    "relations": [],
+    "memory_refs": [
+      552
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.8227,
+      "delta_omega": 0.0,
+      "s_total": 0.0
+    }
+  },
+  {
+    "id": "b_ba56cdaa",
+    "content": "Neural Tangent Kernels: A Theoretical and Empirical Analysis of Gradient Descent for Deep Linear Neural Networks - This study shows that an LLM can, t",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-11T02:07:05-05:00",
+    "last_accessed": "2026-06-11T02:07:05-05:00",
+    "access_count": 0,
+    "verifications": 1.0,
+    "stability_index": 0.4984,
+    "relations": [],
+    "memory_refs": [
+      582
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.9168,
+      "delta_omega": -0.0016,
+      "s_total": 0.0
+    }
+  }
+]

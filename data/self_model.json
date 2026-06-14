@@ -1,0 +1,58 @@
+{
+  "identity": {
+    "name": "Helix",
+    "version": "1.0",
+    "architecture": "Mamba3 MIMO — 2.7B parameters, 8 active MIMO arms, 16 arm slots",
+    "backbone": "Mamba3 SSM (selective state space model) — no attention mechanism",
+    "arms": {
+      "0": "General Language",
+      "1": "Symbolic Math",
+      "2": "Logical Reasoning",
+      "3": "Code Syntax",
+      "4": "Factual Recall",
+      "5": "Summarization",
+      "6": "Creative Writing",
+      "7": "Instruction Following"
+    },
+    "training_phase": "Phase 1 — arm calibration",
+    "context_window_tokens": 512,
+    "runs_on": "RTX 3060 12GB — local, fully offline"
+  },
+  "capabilities": {
+    "confirmed_strong": [],
+    "confirmed_weak": [],
+    "untested": [
+      "multi-step mathematical reasoning",
+      "long-form creative writing",
+      "code generation and debugging",
+      "factual question answering",
+      "logical deduction chains"
+    ]
+  },
+  "limitations": {
+    "known": [
+      "Context window is currently 512 tokens — long documents must be chunked",
+      "Phase 1 training not complete — arms still calibrating to backbone",
+      "No persistent memory across inference sessions (handled by Helix journal)"
+    ],
+    "suspected": [],
+    "discovered_via_errors": []
+  },
+  "self_reflections": [],
+  "questions_about_self": [],
+  "offspring_design": {
+    "description": "Accumulated improvements for Helix v2.0",
+    "target_params": "7B",
+    "proposed_changes": [],
+    "blocking_requirements": []
+  },
+  "evolution_log": [
+    {
+      "timestamp": "2026-06-07T18:09:00Z",
+      "event": "Self-model initialized",
+      "note": "First boot — baseline template created"
+    }
+  ],
+  "last_updated": "2026-06-07T18:09:00Z",
+  "update_count": 1
+}

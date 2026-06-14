@@ -1,0 +1,30 @@
+{
+  "tester": {
+    "display_name": "Tester",
+    "aliases": [],
+    "relationship": "unknown",
+    "notes": "Auto-registered on first direct message.",
+    "channels": {}
+  },
+  "user": {
+    "display_name": "User",
+    "aliases": [],
+    "relationship": "unknown",
+    "notes": "Auto-registered on first direct message.",
+    "channels": {}
+  },
+  "debug": {
+    "display_name": "Debug",
+    "aliases": [],
+    "relationship": "unknown",
+    "notes": "Auto-registered on first direct message.",
+    "channels": {}
+  },
+  "phil": {
+    "display_name": "Phil",
+    "aliases": [],
+    "relationship": "unknown",
+    "notes": "Auto-registered on first direct message.",
+    "channels": {}
+  }
+}

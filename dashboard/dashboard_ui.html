@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helix Cognitive Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f1115;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.5s ease-in-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+        .think-text {
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        .json-text {
+            color: #fca5a5;
+            font-style: italic;
+        }
+        .chat-bubble-user {
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            border-radius: 1rem 1rem 0.25rem 1rem;
+        }
+        .chat-bubble-agent {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1rem 1rem 1rem 0.25rem;
+        }
+        .chat-input:focus {
+            outline: none;
+            border-color: rgba(99, 102, 241, 0.6);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="min-h-screen grid-bg relative p-6">
+    <!-- Header -->
+    <header class="flex justify-between items-center mb-6 pl-2 pr-2">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <i class="fa-solid fa-dna text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white">Helix<span class="text-blue-400">AGI</span></h1>
+                <p class="text-xs text-slate-400 uppercase tracking-widest mt-0.5">Parametric Evolution Monitor</p>
+            </div>
+        </div>
+        
+        <div class="glass-panel px-4 py-2 flex items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 bg-green-500 rounded-full pulse-dot" id="status-indicator"></div>
+                <span class="text-sm font-medium mono" id="status-state">REGULAR</span>
+            </div>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-microchip text-slate-400 text-xs"></i>
+                <span class="text-sm mono text-slate-300">Pulse: <span id="status-pulse" class="text-white">--</span></span>
+            </div>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-slate-400 text-xs"></i>
+                <span class="text-sm mono text-slate-300">LoRA Gen: <span id="lora-gen" class="text-purple-400 font-bold">0</span></span>
+            </div>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-12 gap-6">
+        
+        <!-- Left Column: Primary Training Progress -->
+        <div class="col-span-12 lg:col-span-4 space-y-6">
+            <!-- Countdown Ring -->
+            <div class="glass-panel p-6 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute top-4 left-4 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-bullseye text-blue-400"></i> LoRA Trigger
+                </div>
+                
+                <div class="relative w-48 h-48 mt-6 mb-2">
+                    <svg class="w-full h-full" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"></circle>
+                        <circle id="progress-ring" class="progress-ring__circle" cx="60" cy="60" r="54" fill="none" stroke="url(#gradient)" stroke-width="8" stroke-dasharray="339.292" stroke-dashoffset="339.292" stroke-linecap="round"></circle>
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#3b82f6" />
+                                <stop offset="100%" stop-color="#8b5cf6" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="tuples-pct" class="text-4xl font-bold text-white">0%</span>
+                        <span class="text-xs text-slate-400 mt-1">Ready</span>
+                    </div>
+                </div>
+                
+                <div class="w-full grid grid-cols-2 gap-4 mt-6">
+                    <div class="bg-slate-800/50 rounded-lg p-3 text-center border border-slate-700/50">
+                        <div class="text-2xl font-bold text-blue-400 mono" id="tuples-clean">0</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Clean Tuples</div>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 text-center border border-slate-700/50">
+                        <div class="text-2xl font-bold text-purple-400 mono" id="tuples-target">500</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1">Target</div>
+                    </div>
+                </div>
+                
+                <div class="w-full flex justify-between items-center mt-4 px-2">
+                    <div class="text-xs text-slate-500">
+                        Legacy Filtered: <span id="tuples-legacy" class="text-slate-400">0</span>
+                    </div>
+                    <div class="text-xs text-slate-500 flex items-center gap-1">
+                        <i class="fa-regular fa-clock"></i> ETA: <span id="tuples-eta" class="text-white font-medium">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool Distribution & Gates -->
+            <div class="glass-panel p-5">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-blue-400"></i> Tool Distribution
+                </div>
+                
+                <div id="tool-bars" class="space-y-3 mb-6">
+                    <!-- Bars injected here -->
+                    <div class="text-sm text-slate-500 italic text-center py-4">Awaiting data...</div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 border-t border-slate-700/50 pt-4">
+                    <div class="flex items-center justify-between p-2 rounded bg-slate-800/30">
+                        <div class="text-xs text-slate-400">Diversity (>4)</div>
+                        <div id="gate-div" class="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded bg-slate-800/30">
+                        <div class="text-xs text-slate-400">Conc. (&lt;70%)</div>
+                        <div id="gate-conc" class="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Column: Cognitive Stream -->
+        <div class="col-span-12 lg:col-span-5 space-y-6">
+            <!-- Recent Think Blocks -->
+            <div class="glass-panel p-5 flex flex-col h-full" style="max-height: calc(100vh - 7rem);">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-brain text-purple-400"></i> Internal Monologue (THINK)
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30">Budget: 150t</span>
+                    </div>
+                </div>
+                
+                <div id="think-stream" class="flex-1 overflow-y-auto pr-2 space-y-4">
+                    <!-- Think blocks injected here -->
+                    <div class="text-sm text-slate-500 italic text-center py-8">Awaiting cognitive output...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Beliefs & System Health -->
+        <div class="col-span-12 lg:col-span-3 space-y-6">
+            <!-- Belief Graph -->
+            <div class="glass-panel p-5">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-project-diagram text-green-400"></i> Belief Graph
+                    </div>
+                    <span id="belief-total" class="text-white font-bold mono bg-slate-800 px-2 py-0.5 rounded text-xs">0</span>
+                </div>
+                
+                <div id="belief-cats" class="space-y-2">
+                    <!-- Categories injected here -->
+                    <div class="text-sm text-slate-500 italic text-center py-4">Awaiting data...</div>
+                </div>
+            </div>
+
+            <!-- Component Activity -->
+            <div class="glass-panel p-5">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-heart-pulse text-rose-400"></i> Component Activity
+                </div>
+                <div class="space-y-3" id="component-activity">
+                    <!-- Activity bars -->
+                    <div class="text-sm text-slate-500 italic text-center py-4">Awaiting data...</div>
+                </div>
+            </div>
+            
+            <!-- Terminal Log Snippet -->
+            <div class="glass-panel p-4 flex flex-col" style="height: 200px;">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-terminal text-slate-400"></i> Log Tail
+                </div>
+                <div id="log-tail" class="flex-1 bg-black/40 rounded p-2 overflow-y-auto mono text-[10px] text-slate-400 leading-relaxed whitespace-pre-wrap">Loading...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="glass-panel p-5 mt-6" id="chat-panel">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-comment-dots text-indigo-400"></i> Chat with Helix
+            <span class="ml-auto text-[10px] text-slate-500 font-normal">Messages injected into next pulse</span>
+        </div>
+        <div id="chat-messages" class="flex flex-col gap-3 overflow-y-auto mb-4 pr-1" style="max-height: 260px;">
+            <div class="text-sm text-slate-500 italic text-center py-6" id="chat-placeholder">No messages yet — say something to Helix</div>
+        </div>
+        <div class="flex gap-3 items-end">
+            <textarea id="chat-input" rows="2" placeholder="Send a message to Helix..." class="chat-input flex-1 bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none mono transition-all"></textarea>
+            <button id="chat-send" onclick="Chat.send()" class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white px-5 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-paper-plane"></i> Send
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const UI = {
+            init() {
+                this.poll();
+                setInterval(() => this.poll(), 3000);
+            },
+            
+            async poll() {
+                try {
+                    const [tuples, think, status, acts, logs] = await Promise.all([
+                        fetch('/api/tuples').then(r => r.json()).catch(() => ({})),
+                        fetch('/api/think').then(r => r.json()).catch(() => ({thinks: []})),
+                        fetch('/api/status').then(r => r.json()).catch(() => ({beliefs: {categories:{}, total:0}})),
+                        fetch('/api/activations').then(r => r.json()).catch(() => ({active_components: {}})),
+                        fetch('/api/logs?tab=thoughts&since=0').then(r => r.json()).catch(() => ({lines: []}))
+                    ]);
+                    
+                    this.updateTuples(tuples);
+                    this.updateThink(think);
+                    this.updateStatus(status);
+                    this.updateActivations(acts);
+                    this.updateLogs(logs);
+                    
+                } catch (e) {
+                    console.error("Poll error:", e);
+                    document.getElementById('status-indicator').classList.replace('bg-green-500', 'bg-red-500');
+                    document.getElementById('status-state').textContent = "DISCONNECTED";
+                }
+            },
+            
+            updateTuples(data) {
+                if (!data.threshold) return;
+                
+                // Ring
+                const pct = Math.min(100, data.pct);
+                const circle = document.getElementById('progress-ring');
+                const circumference = 54 * 2 * Math.PI; // 339.292
+                circle.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+                
+                document.getElementById('tuples-pct').textContent = `${pct}%`;
+                document.getElementById('tuples-clean').textContent = data.clean;
+                document.getElementById('tuples-target').textContent = data.threshold;
+                document.getElementById('tuples-legacy').textContent = data.legacy;
+                document.getElementById('tuples-eta').textContent = data.eta_hours ? `${data.eta_hours}h` : 'Calc...';
+                document.getElementById('lora-gen').textContent = data.lora_gen || 0;
+                
+                // Gates
+                const dGate = document.getElementById('gate-div');
+                if (data.diversity_ok) {
+                    dGate.className = "text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 border border-green-500/30 font-medium";
+                    dGate.innerHTML = `<i class="fa-solid fa-check mr-1"></i> PASS (${data.unique_tools})`;
+                } else {
+                    dGate.className = "text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-medium";
+                    dGate.innerHTML = `<i class="fa-solid fa-xmark mr-1"></i> FAIL (${data.unique_tools}/5)`;
+                }
+                
+                const cGate = document.getElementById('gate-conc');
+                if (data.concentration_ok) {
+                    cGate.className = "text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 border border-green-500/30 font-medium";
+                    cGate.innerHTML = `<i class="fa-solid fa-check mr-1"></i> PASS (${data.top_tool_pct}%)`;
+                } else {
+                    cGate.className = "text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-medium";
+                    cGate.innerHTML = `<i class="fa-solid fa-xmark mr-1"></i> FAIL (${data.top_tool_pct}%)`;
+                }
+                
+                // Tools
+                if (data.tool_dist) {
+                    let html = '';
+                    const max = Math.max(...Object.values(data.tool_dist), 1);
+                    for (const [tool, count] of Object.entries(data.tool_dist)) {
+                        const tname = tool || 'none';
+                        const w = Math.max(5, (count / max) * 100);
+                        html += `
+                        <div class="mb-2">
+                            <div class="flex justify-between text-[11px] mb-1">
+                                <span class="text-slate-300 mono">${tname}</span>
+                                <span class="text-slate-400 mono">${count}</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${w}%"></div>
+                            </div>
+                        </div>`;
+                    }
+                    document.getElementById('tool-bars').innerHTML = html;
+                }
+            },
+            
+            updateThink(data) {
+                if (!data.thinks) return;
+                const container = document.getElementById('think-stream');
+                let html = '';
+                
+                // Reverse to show newest at top (if array is chronological)
+                const thinks = [...data.thinks].reverse();
+                
+                thinks.forEach(t => {
+                    const textClass = t.is_json ? 'json-text mono text-xs' : 'think-text text-sm';
+                    const icon = t.is_json ? '<i class="fa-solid fa-code text-rose-400" title="JSON Output"></i>' : '<i class="fa-regular fa-comment-dots text-blue-400" title="Prose Reasoning"></i>';
+                    
+                    html += `
+                    <div class="p-3 bg-slate-800/40 border border-slate-700/50 rounded-lg relative group transition-all hover:bg-slate-800/60">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="text-[10px] text-slate-500 mono flex items-center gap-1.5">
+                                ${icon} ${t.ts}
+                            </div>
+                        </div>
+                        <div class="${textClass}">${t.text}${t.text.length >= 200 ? '...' : ''}</div>
+                    </div>`;
+                });
+                
+                if (html) container.innerHTML = html;
+            },
+            
+            updateStatus(data) {
+                document.getElementById('status-indicator').classList.replace('bg-red-500', 'bg-green-500');
+                if (data.state) document.getElementById('status-state').textContent = data.state;
+                if (data.pulse) document.getElementById('status-pulse').textContent = data.pulse;
+                
+                if (data.beliefs && data.beliefs.categories) {
+                    document.getElementById('belief-total').textContent = data.beliefs.total;
+                    let html = '';
+                    const cats = Object.entries(data.beliefs.categories).sort((a,b) => b[1]-a[1]);
+                    const total = data.beliefs.total || 1;
+                    
+                    const colors = {
+                        "capabilities": "bg-purple-500",
+                        "self_identity": "bg-yellow-500",
+                        "skills": "bg-green-500",
+                        "knowledge": "bg-blue-500",
+                        "people": "bg-pink-500",
+                        "desires": "bg-orange-500"
+                    };
+                    
+                    cats.forEach(([cat, count]) => {
+                        const pct = (count / total * 100).toFixed(1);
+                        const cbg = colors[cat] || "bg-slate-500";
+                        html += `
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <div class="w-1.5 h-4 rounded-full ${cbg}"></div>
+                            <div class="flex-1 flex justify-between text-xs">
+                                <span class="text-slate-300 mono">${cat}</span>
+                                <span class="text-slate-400 mono">${count} <span class="text-slate-600 ml-1">${pct}%</span></span>
+                            </div>
+                        </div>`;
+                    });
+                    if (html) document.getElementById('belief-cats').innerHTML = html;
+                }
+            },
+            
+            updateActivations(data) {
+                if (!data.active_components) return;
+                let html = '';
+                for (const [comp, val] of Object.entries(data.active_components)) {
+                    const w = Math.min(100, val * 100);
+                    html += `
+                    <div>
+                        <div class="flex justify-between text-[10px] uppercase tracking-wider mb-1">
+                            <span class="text-slate-400">${comp}</span>
+                        </div>
+                        <div class="w-full bg-slate-800 rounded h-1 overflow-hidden">
+                            <div class="bg-gradient-to-r from-rose-500 to-orange-400 h-1" style="width: ${w}%"></div>
+                        </div>
+                    </div>`;
+                }
+                if (html) document.getElementById('component-activity').innerHTML = html;
+            },
+            
+            updateLogs(data) {
+                if (!data.lines || !data.lines.length) return;
+                const tail = document.getElementById('log-tail');
+                let html = '';
+                // Just take last 10 lines
+                const lines = data.lines.slice(-10);
+                lines.forEach(l => {
+                    const clean = l.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    html += `<div class="mb-1 border-b border-slate-800/50 pb-1 break-words">${clean}</div>`;
+                });
+                tail.innerHTML = html;
+                tail.scrollTop = tail.scrollHeight;
+            }
+        };
+        
+        UI.init();
+
+        const Chat = {
+            async send() {
+                const input = document.getElementById('chat-input');
+                const text = input.value.trim();
+                if (!text) return;
+                this.addBubble('user', text);
+                input.value = '';
+                try {
+                    const resp = await fetch('/api/messages', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({message: text})
+                    });
+                    this.addBubble('agent', resp.ok ? '\u2699\ufe0f Queued for next pulse.' : '[Error ' + resp.status + ']');
+                } catch(e) { this.addBubble('agent', '[Network error]'); }
+            },
+
+            addBubble(role, text) {
+                document.getElementById('chat-placeholder')?.remove();
+                const container = document.getElementById('chat-messages');
+                const ts = new Date().toLocaleTimeString();
+                const div = document.createElement('div');
+                div.className = 'flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+                div.innerHTML = role === 'user'
+                    ? `<div class="chat-bubble-user max-w-xl px-4 py-2.5 text-sm text-white shadow-lg"><div class="text-[10px] text-blue-200 mb-1 font-medium">YOU \u00b7 ${ts}</div><div>${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`
+                    : `<div class="chat-bubble-agent max-w-xl px-4 py-2.5 text-sm text-slate-200 shadow"><div class="text-[10px] text-indigo-400 mb-1 font-medium mono">HELIX \u00b7 ${ts}</div><div>${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;
+                container.appendChild(div);
+                container.scrollTop = container.scrollHeight;
+            },
+
+            async pollOutbound() {
+                try {
+                    const data = await fetch('/api/messages/outbound').then(r => r.json());
+                    if (data.messages && data.messages.length) {
+                        data.messages.forEach(m => this.addBubble('agent', m));
+                    }
+                } catch(e) {}
+            },
+
+            init() {
+                document.getElementById('chat-input').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.send(); }
+                });
+                setInterval(() => this.pollOutbound(), 5000);
+            }
+        };
+        Chat.init();
+    </script>
+</body>
+</html>

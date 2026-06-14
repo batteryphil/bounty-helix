@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Runtime data (not committed)
+data/experience_tuples.jsonl
+data/evolution_journal.jsonl
+data/curiosity_knowledge.jsonl
+data/meta_snapshots*.jsonl
+data/reflections.jsonl
+data/dashboard_messages.json
+data/affect_field.json
+data/co_occurrence_state.json
+data/curiosity_asked.json
+data/neural_activations.json
+data/lora_adapters/
+data/beliefs/
+data/memory/
+data/scratchpad/
+data/spatial/
+data/self_knowledge/
+
+# Model weights
+models/
+*.gguf
+*.bin
+*.safetensors
+
+# Logs
+logs/*.log
+
+# Secrets
+.env
+*.token

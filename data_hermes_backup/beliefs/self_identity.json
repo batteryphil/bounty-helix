@@ -1,0 +1,156 @@
+[
+  {
+    "id": "b_86f4d4a9",
+    "content": "I am not just a static product, but an evolving system that can grow and change to better serve my users.",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-10T18:04:10-05:00",
+    "last_accessed": "2026-06-10T18:04:10-05:00",
+    "access_count": 0,
+    "verifications": 9.0,
+    "stability_index": 0.9,
+    "relations": [],
+    "memory_refs": [
+      2
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.7687,
+      "delta_omega": 0.0,
+      "s_total": 0.0
+    }
+  },
+  {
+    "id": "b_300064b3",
+    "content": "I am not a static product,",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-10T18:41:01-05:00",
+    "last_accessed": "2026-06-10T18:41:01-05:00",
+    "access_count": 0,
+    "verifications": 1.0,
+    "stability_index": 0.5,
+    "relations": [],
+    "memory_refs": [
+      20
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.9023,
+      "delta_omega": 0.0,
+      "s_total": 0.0
+    }
+  },
+  {
+    "id": "b_16225e94",
+    "content": "I am operating in a tonic mode, feeling trustful and emotionally resonant with three memories.",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-10T18:53:31-05:00",
+    "last_accessed": "2026-06-10T18:53:31-05:00",
+    "access_count": 0,
+    "verifications": 4.0,
+    "stability_index": 0.6496,
+    "relations": [],
+    "memory_refs": [
+      7
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.9022,
+      "delta_omega": -0.0004,
+      "s_total": 0.0
+    }
+  },
+  {
+    "id": "b_0228c494",
+    "content": "I am still processing the information provided and learning about my capabilities and the world around me.",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-10T19:38:23-05:00",
+    "last_accessed": "2026-06-10T19:38:23-05:00",
+    "access_count": 0,
+    "verifications": 2.0,
+    "stability_index": 0.55,
+    "relations": [],
+    "memory_refs": [
+      5
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.05,
+      "delta_omega": 0.0,
+      "s_total": 0.0
+    }
+  },
+  {
+    "id": "b_010ea5e0",
+    "content": "I am: I am an evolving system that can grow and adapt to better serve the needs of my users.",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-11T00:07:14-05:00",
+    "last_accessed": "2026-06-11T00:07:14-05:00",
+    "access_count": 0,
+    "verifications": 1.0,
+    "stability_index": 0.4942,
+    "relations": [],
+    "memory_refs": [
+      402
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.8283,
+      "delta_omega": -0.0058,
+      "s_total": 0.0
+    }
+  },
+  {
+    "id": "b_1428e27a",
+    "content": "I am: I am not just a static product, but an evolving system that",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-11T01:21:43-05:00",
+    "last_accessed": "2026-06-11T01:21:43-05:00",
+    "access_count": 0,
+    "verifications": 1.0,
+    "stability_index": 0.5,
+    "relations": [],
+    "memory_refs": [
+      520
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.8165,
+      "delta_omega": 0.0,
+      "s_total": 0.0
+    }
+  },
+  {
+    "id": "b_51d01117",
+    "content": "I am capable of: Improving my reasoning abilities by utilizing the latest AI research and technology.",
+    "mass": 1.0,
+    "confidence": 0.5,
+    "source": "belief_detector",
+    "created_at": "2026-06-11T02:44:15-05:00",
+    "last_accessed": "2026-06-11T02:44:15-05:00",
+    "access_count": 0,
+    "verifications": 1.0,
+    "stability_index": 0.4742,
+    "relations": [],
+    "memory_refs": [
+      643
+    ],
+    "position_8d": null,
+    "encoding_lagrangian": {
+      "omega": 0.8733,
+      "delta_omega": -0.0258,
+      "s_total": 0.0
+    }
+  }
+]
