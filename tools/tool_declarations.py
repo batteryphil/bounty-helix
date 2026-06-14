@@ -67,13 +67,32 @@ CORE_TOOLS = [
     },
     {
         "name": "search",
-        "description": "Search the web via DuckDuckGo. Returns top results with titles, snippets, and URLs.",
+        "description": "Search the web via DuckDuckGo. Returns top results with titles, snippets, and URLs. For coding problems, also try google_search() to get Google's AI overview answer.",
         "parameters": {
             "type": "object",
             "properties": {
                 "query": {
                     "type": "string",
                     "description": "The search query",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "google_search",
+        "description": (
+            "Search Google and return the full page including Google's AI Overview answer at the top. "
+            "Use this when you need to solve a coding problem, understand an error message, or find "
+            "a specific API/library usage. Google AI often gives a direct answer without needing to "
+            "click any links. Example: google_search('python how to apply git patch programmatically')"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The search query — be specific, include error messages or library names",
                 },
             },
             "required": ["query"],

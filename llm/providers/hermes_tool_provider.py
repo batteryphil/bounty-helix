@@ -93,7 +93,18 @@ SYSTEM_PROMPT = (
     "Profile: https://issuehunt.io/u/batteryphil\n\n"
     "When drafting a PR description, ALWAYS include this line at the bottom:\n"
     "  > IssueHunt contributor: @batteryphil (https://issuehunt.io/u/batteryphil)\n"
-    "This ensures the bounty payout is routed to the correct account on merge.\n"
+    "This ensures the bounty payout is routed to the correct account on merge.\n\n"
+    "## SOLVING CODING PROBLEMS\n"
+    "When you encounter a bug, error, or don't know how to implement something:\n"
+    "1. Use google_search('exact error message') — Google AI Overview at the top often gives\n"
+    "   a direct, complete answer without needing to click any links.\n"
+    "2. Use browse(url) on the top Stack Overflow or docs link to read the full solution.\n"
+    "3. Use terminal(command) to test your understanding before writing the patch.\n\n"
+    "Good google_search examples when stuck:\n"
+    "  google_search('python apply git patch subprocess')\n"
+    "  google_search('write unified diff format python')\n"
+    "  google_search('pytest how to run single test file')\n"
+    "Always search before giving up on a problem.\n"
 )
 
 MAX_TOOL_LOOPS = 5

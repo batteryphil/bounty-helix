@@ -134,6 +134,7 @@ class ToolExecutor:
             "send_message": self._fc_send_message,
             "terminal": self._fc_terminal,
             "search": self._fc_search,
+            "google_search": self._fc_google_search,
             "read_url": self._fc_read_url,
             "read_file": self._fc_read_file,
             "write_file": self._fc_write_file,
@@ -467,6 +468,36 @@ class ToolExecutor:
             return "\n".join(lines)
         except Exception as e:
             return f"Search failed: {e}"
+
+    def _fc_google_search(self, args: dict) -> str:
+        """Browse Google and return result including AI Overview if present."""
+        query = args.get("query", "")
+        if not query:
+            return "No query provided."
+        import urllib.parse
+        url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+        try:
+            ws = self._get_web_search()
+            # First try reading the Google page directly for AI overview
+            content = ws.read_url(url)
+            if content and len(content) > 100:
+                return f"Google results for: {query}\n\n{content[:5000]}"
+        except Exception:
+            pass
+        # Fallback: regular web search
+        try:
+            results = ws.search_web(query, max_results=5)
+            lines = [f"Google search: {query}\n"]
+            for r in results:
+                lines.append(f"• {r['title']}")
+                if r.get('snippet'):
+                    lines.append(f"  {r['snippet'][:200]}")
+                if r.get('url'):
+                    lines.append(f"  {r['url']}")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"Google search failed: {e}"
+
 
     def _fc_read_url(self, args: dict) -> str:
         url = args.get("url", "")
