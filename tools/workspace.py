@@ -25,7 +25,19 @@ SOLUTIONS = PROJ / "solutions"
 def _repo_dir(slug: str) -> Path | None:
     """Find the cloned repo directory for a bounty slug or repo name."""
     if not WORKSPACE.exists():
-        return None
+        # Last resort: pick the workspace dir with the most slug chars in common
+    best, best_score = None, 0
+    slug_lower = slug.lower().replace("-","").replace("_","")
+    for d in candidates:
+        if not d.is_dir():
+            continue
+        dname = d.name.lower().replace("-","").replace("_","")
+        score = sum(1 for c in dname if c in slug_lower)
+        if score > best_score:
+            best, best_score = d, score
+    if best and best_score > 5:
+        return best
+    return None
     if not slug:
         return None
     # Accept "owner/repo" format directly
