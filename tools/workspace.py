@@ -23,18 +23,30 @@ SOLUTIONS = PROJ / "solutions"
 
 
 def _repo_dir(slug: str) -> Path | None:
-    """Find the cloned repo directory for a bounty slug."""
+    """Find the cloned repo directory for a bounty slug or repo name."""
     if not WORKSPACE.exists():
         return None
-    # slug format: owner-repo-issue-N → owner_repo
-    base = slug.rsplit("-issue-", 1)[0].replace("-", "_", 1)
-    # Try exact match first
-    for d in WORKSPACE.iterdir():
-        if d.is_dir() and (base in d.name or d.name.replace("_", "-") in slug):
+    if not slug:
+        return None
+    # Accept "owner/repo" format directly
+    normalized = slug.replace("/", "_").replace("-", "_")
+    slug_base = slug.rsplit("-issue-", 1)[0].replace("-", "_", 1) if "-issue-" in slug else normalized
+    candidates = list(WORKSPACE.iterdir())
+    # Exact name match
+    for d in candidates:
+        if d.is_dir() and d.name == slug_base:
             return d
-    # Try partial match
-    for d in WORKSPACE.iterdir():
-        if d.is_dir() and any(part in d.name for part in base.split("_")):
+    # Partial match — any workspace dir whose name contains key parts
+    for d in candidates:
+        if not d.is_dir():
+            continue
+        dname = d.name.replace("-", "_").lower()
+        sbase = slug_base.lower()
+        if sbase in dname or dname in sbase:
+            return d
+        # Try matching the repo owner+name ignoring case/separators
+        parts = [p for p in sbase.split("_") if len(p) > 2]
+        if all(p in dname for p in parts):
             return d
     return None
 
