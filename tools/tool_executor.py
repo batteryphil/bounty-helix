@@ -174,6 +174,9 @@ class ToolExecutor:
         }
         github_handlers = {
             "github_search": self._fc_github_search,
+            "issuehunt_search": self._fc_issuehunt_search,
+            "issuehunt_top_bounties": self._fc_issuehunt_top_bounties,
+            "issuehunt_save_opportunities": self._fc_issuehunt_save_opportunities,
             "github_issue": self._fc_github_issue,
             "github_create_issue": self._fc_github_create_issue,
             "github_comment": self._fc_github_comment,
@@ -722,6 +725,21 @@ class ToolExecutor:
     def _fc_github_search(self, args: dict) -> str:
         from tools import github_api as gh
         return gh.github_search_repos(args.get("query", ""))
+
+    def _fc_issuehunt_search(self, args: dict) -> str:
+        from tools.issuehunt import issuehunt_search
+        return issuehunt_search(
+            language=args.get("language", "python"),
+            max_results=args.get("max_results", 10),
+        )
+
+    def _fc_issuehunt_top_bounties(self, args: dict) -> str:
+        from tools.issuehunt import issuehunt_top_bounties
+        return issuehunt_top_bounties(max_results=args.get("max_results", 15))
+
+    def _fc_issuehunt_save_opportunities(self, args: dict) -> str:
+        from tools.issuehunt import issuehunt_save_opportunities
+        return issuehunt_save_opportunities(args.get("opportunities", []))
 
     def _fc_github_issue(self, args: dict) -> str:
         from tools import github_api as gh

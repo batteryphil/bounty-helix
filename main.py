@@ -50,6 +50,19 @@ def _load_credentials():
     Credentials loaded: HELIX_TELEGRAM_TOKEN, MOLTBOOK_API_KEY,
     GITHUB_TOKEN, GEMINI_API_KEY, ANTHROPIC_API_KEY, etc.
     """
+    # Load project .env first (bounty-helix specific secrets)
+    _proj_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(_proj_env):
+        try:
+            from dotenv import load_dotenv as _load_dotenv
+            _load_dotenv(_proj_env, override=False)
+        except ImportError:
+            for _line in open(_proj_env):
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    if _k.strip() not in os.environ:
+                        os.environ[_k.strip()] = _v.strip()
     cred_path = os.path.expanduser("~/.config/helix/credentials.env")
     if not os.path.exists(cred_path):
         print(f"  ⚠ No credentials file at {cred_path}")

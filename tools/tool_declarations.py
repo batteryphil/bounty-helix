@@ -1326,3 +1326,41 @@ TOOL_DECLARATIONS = (
     + TASKS_TOOLS
     + DESKTOP_TOOLS
 )
+
+# ── IssueHunt Bounty Tools ────────────────────────────────────────────
+ISSUEHUNT_TOOLS = [
+    {
+        "name": "issuehunt_search",
+        "description": "Search IssueHunt for open funded bounties by language. Returns ranked list of paid GitHub issues.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "language": {"type": "string", "description": "Programming language (python, javascript, rust, go, typescript)"},
+                "max_results": {"type": "integer", "description": "Max results (default 10)"},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "issuehunt_top_bounties",
+        "description": "Find the top open bounties across ALL languages on IssueHunt. Use this for broad opportunity discovery.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "max_results": {"type": "integer", "description": "Max results (default 15)"},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "issuehunt_save_opportunities",
+        "description": "Save discovered bounty opportunities to the opportunities database (data/opportunities.json).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "opportunities": {"type": "array", "description": "List of opportunity dicts with url, title, repo, language fields"},
+            },
+            "required": ["opportunities"],
+        },
+    },
+]
