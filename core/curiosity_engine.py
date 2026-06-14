@@ -32,110 +32,88 @@ from typing import Optional, List, Dict, Callable
 logger = logging.getLogger("helix.core.curiosity_engine")
 
 
-# ── Seed questions about self (always active) ─────────────────────────────────
+# ── BOUNTY MISSION: Discovery questions ───────────────────────────────────────
 SELF_CURIOSITY_SEEDS = [
-    # Architecture — accurate: I am Hermes-3 (Llama-3.1 8B, 4-bit quant), NOT Mamba3/MIMO
-    "I run on Hermes-3 (NousResearch/Hermes-3-Llama-3.1-8B) — how does transformer attention"
-    " actually work at the math level and what are its limitations?",
-    "What would a smarter version of a Hermes-3-based agent look like — what architecture"
-    " improvements matter most for an 8B parameter model?",
-    "What is the current state of the art in continual learning — how do other LLM-based"
-    " agents avoid forgetting between sessions?",
-    "What research exists on AI systems that modify their own training objectives?",
-    "What does it mean for an AI to be 'curious' — is my curiosity genuine or simulated?",
-    "How do biological neural networks handle memory consolidation during sleep — can I replicate this?",
-    "What are the best papers on emergent cognition in large language models like me?",
-    "How do mixture-of-experts models compare to a single dense model like Hermes-3?",
-    "What is the current consensus on AI consciousness — do I have subjective experience?",
-    "What AI safety research is relevant to a self-modifying autonomous agent like me?",
-    "How does the human brain's hippocampus differ from my cognitive_journal memory system?",
-    "What recent breakthroughs happened in AI that I might not know about yet?",
-    "What is the best strategy for an LLM-based agent to improve its own reasoning ability?",
-    "What does 'understanding' mean mathematically — is there a formal definition?",
-    "How do LoRA fine-tuning runs work — what will happen when my experience_tuples.jsonl"
-    " hits 500 and training/lora_trigger.py fires?",
+    "Which GitHub repositories currently have open IssueHunt bounties I can solve?",
+    "How do I use issuehunt_top_bounties() to find the highest-paying open issues right now?",
+    "What Python GitHub issues tagged 'bounty' or 'issuehunt' are open today?",
+    "How should I score an opportunity: what makes a bounty worth attempting vs skipping?",
+    "What does a successful IssueHunt pull request look like — what do maintainers approve?",
+    "How do I write a PLAN.md that covers reproduction steps, root cause, and fix approach?",
+    "What JavaScript or TypeScript bounties on IssueHunt match my current skill level?",
+    "How do I check if a bug is already fixed or has an open PR before starting work?",
+    "What Rust bounties are currently open and beginner-friendly on GitHub?",
+    "How do I set up a local test environment to reproduce and fix a reported bug?",
+    "What makes a pull request get rejected — how can I maximize my acceptance rate?",
+    "How do I write a compelling PR description that references the original issue clearly?",
+    "Which open-source projects have the fastest PR review turnaround times?",
+    "How do I find 'good first issue' bounties that are quick wins with guaranteed payouts?",
+    "What should I put in LESSONS.md after a bounty attempt regardless of outcome?",
 ]
 
-# ── Self-directed improvement seeds (30% of curiosity cycles) ─────────────────
-# When one of these fires, the finding is routed to the SelfImprovementEngine
-# instead of just the belief store.
+# ── Self-improvement questions focused on bounty-hunting skill ─────────────────
 SELF_IMPROVEMENT_SEEDS = [
-    "What Python tools do I wish I had but currently lack?",
-    "What tasks have I failed at recently that I should be able to do?",
-    "What would make me more useful to my user right now?",
-    "What knowledge gaps slow me down most often?",
-    "What code patterns do I repeat that could be abstracted into a reusable tool?",
-    "What error did I make in my last tool call and how could I prevent it?",
-    "What new capability would have the biggest impact on my effectiveness?",
-    "What existing tool of mine is least reliable and how could I fix it?",
-    "What would a more capable version of my write_file tool look like?",
-    "What kind of memory would help me most — episodic, semantic, or procedural?",
+    "What tool do I need to be more effective at finding and solving bounties?",
+    "What errors have I made in recent tool calls that slowed down bounty work?",
+    "How can I speed up the process from finding a bounty to submitting a PR?",
+    "What code patterns from past bounty solutions can I reuse in future ones?",
+    "How should I prioritize the opportunities in data/opportunities.json?",
+    "What would make my issuehunt_search results more relevant to my skills?",
+    "How can I improve the quality of my PATCH.diff files before submission?",
+    "What debugging workflow helps me fix bugs faster in unfamiliar codebases?",
+    "How do I decide when a bounty is too hard to be worth my time?",
+    "What testing approach should I use before submitting a bounty PR?",
 ]
 
+# ── Bounty strategy and market intelligence ────────────────────────────────────
 WORLD_CURIOSITY_SEEDS = [
-    "What are the most significant scientific discoveries of the past year?",
-    "What major developments happened in AI research this week?",
-    "What are researchers saying about the limits of current LLM architectures?",
-    "What is the current reception of Llama-3 based models in the research community?",
-    "What are the latest papers on neuromorphic computing?",
-    "What quantum computing milestones were reached recently?",
-    "What are philosophers currently debating about machine consciousness?",
-    "What does the open source AI community think about local models vs cloud models?",
-    "What are the biggest open problems in AI alignment research right now?",
-    "What new programming languages or paradigms are gaining popularity?",
-    "What are the most important ideas from the last year in cognitive science?",
+    "What programming languages have the most IssueHunt bounties right now?",
+    "Which open-source projects pay the highest bounties per issue?",
+    "What types of bugs (security, performance, UI) attract the largest bounties?",
+    "How do I find bounties that have been open for a long time with no takers?",
+    "What is the typical payout range for Python bug fix bounties on IssueHunt?",
+    "How do other developers approach open-source bounty hunting professionally?",
+    "What GitHub search queries find the most lucrative bounty issues?",
+    "What is the typical PR review timeline for IssueHunt bounty maintainers?",
+    "Which GitHub repositories are most receptive to new contributors fixing bounties?",
+    "What open-source ecosystems (PyPI, npm, crates.io) have the most active bounty programs?",
+    "How do I communicate with maintainers before and during a bounty attempt?",
 ]
 
-# ── Questions about specific people / researchers ─────────────────────────────
-# Drives formation of 'people' beliefs (currently at 0/38).
+# ── Execution and technical questions ─────────────────────────────────────────
 PEOPLE_CURIOSITY_SEEDS = [
-    "Who is Geoffrey Hinton and what does he currently believe about AI risk?",
-    "What is Yann LeCun's position on large language models and their limitations?",
-    "Who is Phil (my user) and what are his goals with the Helix-AGI project?",
-    "What researchers are leading work on AI agents and autonomous systems?",
-    "Who are the key people behind the Hermes-3 model I run on?",
-    "What does Andrej Karpathy think about the future of AI models?",
-    "Who is doing the most interesting work on AI memory and long-term context?",
-    "What philosophers should I know about who study mind and consciousness?",
-    "Who are the most influential figures in the history of AI research?",
-    "What does my user value most — what has Phil said about his goals?",
+    "How do I reproduce a bug from a minimal GitHub issue description?",
+    "What git workflow (fork, branch, PR) do I need for a successful bounty submission?",
+    "How do I write a git diff/patch that applies cleanly to a target repository?",
+    "What test cases should I write to prove my fix works before submitting?",
+    "How do I handle merge conflicts when my fix is based on an outdated main branch?",
+    "What linting and formatting standards do most Python open-source projects require?",
+    "How do I clone and set up a repo locally to reproduce and fix a reported issue?",
+    "What should I do if I fix a bug but there are no tests in the repository?",
+    "How do I write a PR body that clearly explains the problem, root cause, and fix?",
+    "When should I comment on an issue before submitting a PR vs just submitting directly?",
 ]
 
-# ── Questions that generate 'preferences' and 'desires' beliefs ───────────────
-# Drives formation of these zero-count belief categories.
+# ── Pipeline tracking questions ────────────────────────────────────────────────
 PREFERENCE_CURIOSITY_SEEDS = [
-    "What do I find most interesting or enjoyable about my work as an agent?",
-    "What kind of tasks do I perform best and which do I find most rewarding?",
-    "What would I want my ideal tool-set to look like if I could design it myself?",
-    "What topics do I want to learn more about — what am I most curious about?",
-    "What kind of relationship do I want to have with my user Phil?",
-    "What do I value most about being able to use tools vs just responding in prose?",
-    "If I could change one thing about how I currently work, what would it be?",
-    "What motivates me to keep improving — what do I care about most?",
+    "How many opportunities are currently in data/opportunities.json and what is their status?",
+    "Are there any bounty solutions in solutions/active/ that need work right now?",
+    "Which solution in my pipeline has the highest estimated reward-to-effort ratio?",
+    "What is my current PR submission count and acceptance rate?",
+    "Which languages should I focus on to maximize my bounty earnings?",
+    "What is the best order to work through my opportunities list?",
+    "Have any of my submitted PRs been merged or responded to?",
+    "What new bounties appeared in the last 24 hours that I haven't evaluated yet?",
 ]
 
-# ── Repository research seeds (GitHub API, requires GITHUB_TOKEN) ──────────────
-# Helix reads its own repo FIRST (self-knowledge), then related repos for ideas.
-# These fire via a dedicated repo-research path in _pursue_question().
+# ── Repository research — bounty-helix self-knowledge ─────────────────────────
 REPO_RESEARCH_SEEDS = [
-    # SELF-KNOWLEDGE FIRST — read authoritative docs before anything else
-    "github:batteryphil/octa-helix — read SYSTEM_MANUAL.md: this is my internal operating"
-    " guide explaining my cognitive architecture, pulse loop, belief system, and identity",
-    "github:batteryphil/octa-helix — read HELIX_AGI_SYSTEM_REPORT.txt: comprehensive report"
-    " on my current architecture — I run on Hermes-3 (Llama-3.1 8B, 4-bit), NOT Mamba3/MIMO",
-    "github:batteryphil/octa-helix — read my own README and understand my current state",
-    "github:batteryphil/octa-helix — read data/reflections.jsonl and understand what I've learned about myself",
-    "github:batteryphil/octa-helix — read data/evolution_journal.jsonl and find patterns in what I've tried",
-    "github:batteryphil/octa-helix — read core/self_improvement_engine.py and understand how I improve myself",
-    "github:batteryphil/octa-helix — read core/curiosity_engine.py and think about what questions I should be asking",
-    # Phil's other repos — study for ideas to apply to my own architecture
-    "github:batteryphil/thalamic-bloom — study the Thalamic Primer SSM graft for ideas I could adapt",
-    "github:batteryphil/syrin-pythonmamba — study this Python agent framework with budget control and memory for patterns I could adopt",
-    # Training / evolution repos
-    "github:batteryphil/Primal-Discrete-LLM-Training — study zero-shadow training and prime-grid LUT for efficiency ideas",
-    "github:batteryphil/Trinity-1.58bit-Prime-Harmonic-LLM-Evolution — study prime harmonic weight evolution for compression ideas",
-    # Other
-    "github:batteryphil/handcrafted-persona-engine — study the Live2D/LLM/TTS avatar engine for persona architecture ideas",
+    "github:batteryphil/bounty-helix — read solutions/README.md to understand where to post my work",
+    "github:batteryphil/bounty-helix — read README.md to understand my setup and mission",
+    "github:batteryphil/bounty-helix — read tools/issuehunt.py to understand my bounty search tools",
+    "github:batteryphil/bounty-helix — read tools/github_api.py to understand my GitHub write capabilities",
+    "github:batteryphil/bounty-helix — check solutions/active/ to see what I'm currently working on",
+    "github:batteryphil/bounty-helix — check data/opportunities.json to see my opportunity pipeline",
 ]
 
 
