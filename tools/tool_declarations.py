@@ -1244,8 +1244,13 @@ TOOLSET_MANAGEMENT_TOOLS = [
 BOUNTY_WORKFLOW_TOOLS = [
     {
         "name": "bounty_easy_search",
-        "description": "Search for easy, quick-win bounties: 'good first issue' + bounty label, docs, tests. Highest success probability.",
-        "parameters": {"type": "object", "properties": {"max_results": {"type": "integer"}}, "required": []},
+        "description": "Search GitHub for easy bounties tagged 'good first issue' + 'bounty'. NO query parameter needed — just call bounty_easy_search() with no arguments.",
+        "parameters": {"type": "object", "properties": {"max_results": {"type": "integer", "description": "Max results, default 10"}}, "required": []},
+    },
+    {
+        "name": "issuehunt_top_bounties",
+        "description": "Find the top open bounties across ALL languages. Call with no arguments: issuehunt_top_bounties(). Do NOT pass a query parameter.",
+        "parameters": {"type": "object", "properties": {"max_results": {"type": "integer", "description": "Max results, default 15"}}, "required": []},
     },
     {
         "name": "bounty_status",
