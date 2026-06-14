@@ -135,7 +135,16 @@ def bounty_clone_repo(repo: str) -> str:
     return f"Clone failed:\n{result}"
 
 
-def bounty_run(slug: str, command: str) -> str:
+def bounty_run(slug: str = "", command: str = "", repo: str = "", issue_num: int = 0) -> str:
+    if not slug and repo and issue_num:
+        slug = _slug(repo, issue_num)
+    elif not slug and repo:
+        # Try to find by repo name in workspace
+        workspace_dirs = list(WORKSPACE_DIR.iterdir()) if WORKSPACE_DIR.exists() else []
+        for d in workspace_dirs:
+            if repo.replace("/","_") in d.name:
+                slug = d.name
+                break
     """
     Run a shell command inside the cloned repo for this bounty.
     Use this to: reproduce the bug, run tests, verify your fix.
@@ -173,7 +182,11 @@ def bounty_run(slug: str, command: str) -> str:
     return _run(command, repo_dir, timeout=120)
 
 
-def bounty_write_plan(slug: str, content: str) -> str:
+def bounty_write_plan(slug: str = "", content: str = "", repo: str = "", issue_num: int = 0, plan: str = "") -> str:
+    if not slug and repo and issue_num:
+        slug = _slug(repo, issue_num)
+    if not content and plan:
+        content = plan
     """
     Write the PLAN.md for this bounty — your analysis and fix approach.
     Include: problem description, root cause, fix approach, test plan.
@@ -190,7 +203,11 @@ def bounty_write_plan(slug: str, content: str) -> str:
     return f"✅ PLAN.md written ({len(content)} chars) → {sol_dir}/PLAN.md"
 
 
-def bounty_write_patch(slug: str, content: str) -> str:
+def bounty_write_patch(slug: str = "", content: str = "", repo: str = "", issue_num: int = 0, patch: str = "") -> str:
+    if not slug and repo and issue_num:
+        slug = _slug(repo, issue_num)
+    if not content and patch:
+        content = patch
     """
     Write the PATCH.diff — the actual code fix as a unified diff.
 
@@ -206,7 +223,13 @@ def bounty_write_patch(slug: str, content: str) -> str:
     return f"✅ PATCH.diff written ({len(content)} chars) → {sol_dir}/PATCH.diff"
 
 
-def bounty_write_pr(slug: str, content: str) -> str:
+def bounty_write_pr(slug: str = "", content: str = "", repo: str = "", issue_num: int = 0, title: str = "", body: str = "", head: str = "", base: str = "") -> str:
+    if not slug and repo and issue_num:
+        slug = _slug(repo, issue_num)
+    if not content and body:
+        content = body
+    elif not content and title:
+        content = f"## {title}\n\n{body}"
     """
     Write the PR_DESCRIPTION.md — the pull request body.
     ALWAYS include the IssueHunt attribution line at the bottom.
@@ -230,7 +253,9 @@ def bounty_write_pr(slug: str, content: str) -> str:
     return f"✅ PR_DESCRIPTION.md written → {sol_dir}/PR_DESCRIPTION.md"
 
 
-def bounty_apply_patch(slug: str) -> str:
+def bounty_apply_patch(slug: str = "", repo: str = "", issue_num: int = 0) -> str:
+    if not slug and repo and issue_num:
+        slug = _slug(repo, issue_num)
     """
     Apply the PATCH.diff to the cloned repo for this bounty.
     Run bounty_run(slug, 'python -m pytest ...') after this to verify.
@@ -263,7 +288,9 @@ def bounty_apply_patch(slug: str) -> str:
     return f"Patch applied:\n{result}"
 
 
-def bounty_submit(slug: str) -> str:
+def bounty_submit(slug: str = "", repo: str = "", issue_num: int = 0) -> str:
+    if not slug and repo and issue_num:
+        slug = _slug(repo, issue_num)
     """
     Submit a completed bounty: fork the target repo, push fix as a branch,
     and create a pull request via GitHub API.
