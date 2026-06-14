@@ -1226,7 +1226,12 @@ TOOLSETS = {
     "github": {
         "description": "GitHub API — search repos, manage issues, PRs, and comments",
         "tools": GITHUB_TOOLS,
-        "default": False,
+        "default": True,
+    },
+    "issuehunt": {
+        "description": "IssueHunt bounty search — find and save paid open-source issues",
+        "tools": ISSUEHUNT_TOOLS,
+        "default": True,
     },
     "social": {
         "description": "Moltbook social platform — feed, posts, comments, profiles",
@@ -1319,6 +1324,7 @@ TOOL_DECLARATIONS = (
     + BROWSER_TOOLS
     + GIT_TOOLS
     + GITHUB_TOOLS
+    + ISSUEHUNT_TOOLS
     + MOLTBOOK_TOOLS
     + EMAIL_TOOLS
     + CALENDAR_TOOLS
