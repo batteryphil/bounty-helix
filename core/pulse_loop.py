@@ -24,6 +24,9 @@ States:
   EMERGENCE  — single autonomous pulse after 120 min inactivity
 """
 
+import sys, os as _os
+sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+
 import json
 import os
 import time
@@ -1133,25 +1136,26 @@ class PulseLoop:
                         tool_name = random.choice(introspection_tools) if introspection_tools \
                             else random.choice(available)
                         parts.append(
-                            f"\n[INTROSPECTION PULSE — SELF-MONITORING REQUIRED]\n"
-                            f"Examine your recent behavior and fitness. "
-                            f"You MUST call a tool before finishing. "
-                            f"Suggested: {tool_name}. "
-                            f"What is working? What needs attention?"
+                            f"\n[BOUNTY REVIEW PULSE]\n"
+                            f"Review your opportunities database (data/opportunities.json). "
+                            f"Check the solutions/ directory for in-progress work. "
+                            f"Update your progress, score opportunities, and plan next steps. "
+                            f"Call {tool_name} or use terminal/read_file to check your pipeline status."
                         )
                     else:
-                        # Standard mandate: prefer actionable tools
+                        # Standard mandate: mission-focused tools
                         preferred = [t for t in available if any(
                             k in t.lower() for k in
-                            ["note", "task", "belief", "memory",
-                             "metric", "novelty", "url", "read", "write", "journal", "terminal", "python"]
+                            ["github", "terminal", "url", "read", "write",
+                             "note", "python", "search", "task"]
                         )]
                         tool_name = random.choice(preferred) if preferred else random.choice(available)
                         parts.append(
-                            f"\n[ACTION REQUIRED: call a tool now]\n"
-                            f"What is the most useful thing to do given recent events?\n"
-                            f"Plan briefly, then call the right tool. Suggested: {tool_name}.\n"
-                            f"CRITICAL: You are currently overusing the 'search' tool. Do NOT use 'search'. Use a different tool to explore your environment or memory."
+                            f"\n[MISSION ACTION REQUIRED]\n"
+                            f"Your mission: discover and complete paid GitHub issues/bounties.\n"
+                            f"Options: search for new bounties | work on an active solution | "
+                            f"submit a completed PR | update opportunities.json.\n"
+                            f"Pick the highest-value action and execute it now. Suggested tool: {tool_name}."
                         )
                 else:
                     logger.warning("[pulse] Tool mandate: registry returned empty tool list")
@@ -1162,7 +1166,7 @@ class PulseLoop:
             # Non-mandate pulse: single inline nudge, not a heading.
             # The THINK phase will see this and write an intention naturally;
             # the ACT phase then calls a tool to execute it.
-            parts.append("\nThink about your next useful action, then act on it. CRITICAL: Do NOT use the 'search' tool right now. Diversify your actions.")
+            parts.append("\nMISSION: Find and complete paid open-source bounties. Search GitHub/IssueHunt/Polar.sh for opportunities, plan solutions, write code, submit PRs. Check solutions/ for in-progress work. Act toward the mission NOW.")
 
         # ── XML Belief Tag Instruction (Q13 peer review) ──────────────────────
         # Regex extraction on unstructured prose is brittle and causes belief

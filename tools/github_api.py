@@ -1,15 +1,12 @@
 """
-Helix — GitHub API Tools  (READ-ONLY MODE)
+Helix — GitHub API Tools  (READ/WRITE ENABLED)
 
-Provides structured API access to GitHub repos, issues, and PRs.
-Also wraps local git read operations (status, diff, log).
+Provides full API access to GitHub repos, issues, and PRs.
+Also wraps local git operations (status, diff, log, commit, push).
 
-WRITE OPERATIONS ARE DISABLED.
-git_commit, git_push, github_create_issue, github_comment_issue,
-github_create_pr all return an error immediately — the agent may
-only READ from GitHub, never write to it.
+REPO: batteryphil/bounty-helix — agent has full read/write access.
 
-Auth: GITHUB_TOKEN from environment (loaded from credentials.env).
+Auth: GITHUB_TOKEN from environment (.env file).
 
 Tag interface (read-only subset — write tags are suppressed by governor):
   [GIT_STATUS:path]              — Repo status + current branch
@@ -32,7 +29,7 @@ logger = logging.getLogger("helix.tools.github")
 
 API_BASE = "https://api.github.com"
 TIMEOUT  = 15
-_WRITE_DISABLED = "[BLOCKED] GitHub write operations are disabled. Helix may only READ from repos."
+_WRITE_DISABLED = None  # Write operations ENABLED for batteryphil/bounty-helix
 
 
 def _github_headers() -> dict:
@@ -146,15 +143,29 @@ def git_pull(repo_path: str) -> str:
 # ── WRITE OPERATIONS — ALL DISABLED ──────────────────────────────────
 
 def git_commit(repo_path: str, message: str) -> str:
-    """DISABLED — Helix may not commit to repos."""
-    logger.warning(f"[BLOCKED] git_commit attempted on {repo_path}: {message[:80]}")
-    return _WRITE_DISABLED
+    """Commit staged changes in repo_path with message."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "commit", "-m", message],
+            cwd=repo_path, capture_output=True, text=True, timeout=30
+        )
+        return result.stdout + result.stderr
+    except Exception as e:
+        return f"git commit error: {e}"
 
 
-def git_push(repo_path: str) -> str:
-    """DISABLED — Helix may not push to repos."""
-    logger.warning(f"[BLOCKED] git_push attempted on {repo_path}")
-    return _WRITE_DISABLED
+def git_push(repo_path: str, remote: str = "origin", branch: str = "main") -> str:
+    """Push commits in repo_path to remote/branch."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "push", remote, branch],
+            cwd=repo_path, capture_output=True, text=True, timeout=60
+        )
+        return result.stdout + result.stderr
+    except Exception as e:
+        return f"git push error: {e}"
 
 
 # ── GitHub REST API — Read Only ───────────────────────────────────────
@@ -252,6 +263,14 @@ def github_comment_issue(repo: str, issue_number: int, body: str) -> str:
 
 
 def github_create_pr(repo: str, title: str, head: str, base: str = "main", body: str = "") -> str:
-    """DISABLED — Helix may not create pull requests."""
-    logger.warning(f"[BLOCKED] github_create_pr attempted on {repo}: {title[:60]}")
-    return _WRITE_DISABLED
+    """Create a pull request on a GitHub repo."""
+    token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if not token:
+        return "Error: GITHUB_TOKEN not set"
+    import requests
+    r = requests.post(
+        f"https://api.github.com/repos/{repo}/pulls",
+        headers={"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"},
+        json={"title": title, "head": head, "base": base, "body": body}
+    )
+    return r.json().get("html_url", str(r.json()))

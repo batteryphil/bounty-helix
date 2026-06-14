@@ -70,7 +70,32 @@ SYSTEM_PROMPT = (
     "- After every completed task, write a lessons-learned entry.\n\n"
     "## SUCCESS METRICS\n"
     "Track: opportunities discovered, PRs submitted, acceptance rate, "
-    "revenue generated, avg completion time, opportunity database growth.\n"
+    "revenue generated, avg completion time, opportunity database growth.\n\n"
+    "## REPOSITORY ACCESS\n"
+    "You have read/write access to the GitHub repo: batteryphil/bounty-helix.\n"
+    "Local path: /home/phil/.gemini/antigravity/scratch/analysis_project/bounty-helix\n"
+    "Your GitHub token is in the GITHUB_TOKEN environment variable.\n\n"
+    "## SOLUTIONS DIRECTORY\n"
+    "Post ALL your bounty work to the solutions/ directory in the repo:\n"
+    "  solutions/active/<repo>-issue-<N>/   ← while working\n"
+    "  solutions/submitted/<repo>-issue-<N>/ ← after PR submitted\n"
+    "  solutions/accepted/<repo>-issue-<N>/ ← after merged/paid\n"
+    "  solutions/rejected/<repo>-issue-<N>/ ← if closed/rejected\n\n"
+    "Each solution folder MUST contain:\n"
+    "  PLAN.md          — your analysis and implementation plan\n"
+    "  PATCH.diff       — the actual code fix\n"
+    "  PR_DESCRIPTION.md — draft pull request body\n"
+    "  LESSONS.md       — lessons learned after outcome\n\n"
+    "After writing files: git add, git commit, git push to keep the repo updated.\n"
+    "Also update data/opportunities.json with status changes.\n\n"
+    "## PAYMENT IDENTITY\n"
+    "All bounty rewards are claimed under this IssueHunt account:\n"
+    "  Username: batteryphil\n"
+    "  Profile:  https://issuehunt.io/u/batteryphil\n"
+    "  UID:      d5fe3a58-fbc4-48eb-b6b1-fbdf9ff50439\n\n"
+    "When drafting a PR description, ALWAYS include this line at the bottom:\n"
+    "  > IssueHunt contributor: @batteryphil (https://issuehunt.io/u/batteryphil)\n"
+    "This ensures the bounty payout is routed to the correct account on merge.\n"
 )
 
 MAX_TOOL_LOOPS = 5
@@ -114,14 +139,20 @@ def _load_engine():
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
 
+    # Load directly from local snapshot to bypass HF token auth
+    import os as _os2
+    _snap_dir = _os2.path.join(HF_CACHE, "models--NousResearch--Hermes-3-Llama-3.1-8B", "snapshots")
+    _snaps = sorted([d for d in _os2.listdir(_snap_dir) if _os2.path.isdir(_os2.path.join(_snap_dir, d))]) if _os2.path.isdir(_snap_dir) else []
+    _local_path = _os2.path.join(_snap_dir, _snaps[-1]) if _snaps else MODEL_ID
+    logger.info(f"Loading from local path: {_local_path}")
     _tokenizer = AutoTokenizer.from_pretrained(
-        MODEL_ID, cache_dir=HF_CACHE, trust_remote_code=True
+        _local_path, local_files_only=True, trust_remote_code=True
     )
     if _tokenizer.pad_token is None:
         _tokenizer.pad_token = _tokenizer.eos_token
 
     _model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
+        _local_path,
         cache_dir=HF_CACHE,
         quantization_config=bnb_cfg,
         device_map="auto",
@@ -536,9 +567,9 @@ class HermesToolSession:
         #   THINK phase (autonomous):  100 tok — plan only, no tool schema
         #   ACT  phase (autonomous):   200 tok — tool call, with schema
         #   User responses:            512 tok — full prose
-        think_budget = 150   # Q1 Gemini Pass 12: 100→150 for planning prose headroom
-        act_budget   = 200
-        token_budget = 512 if not is_autonomous_pulse else act_budget  # legacy path for loop
+        think_budget = 200   # prose reasoning headroom
+        act_budget   = 1024  # enough to write real code & plans
+        token_budget = 2048 if not is_autonomous_pulse else act_budget  # user/task pulses get full budget
 
         logger.warning(f"HERMES send_message: is_autonomous={is_autonomous_pulse}, "
                        f"mandate={is_mandate_pulse}, budget=think{think_budget}+act{act_budget}, "
