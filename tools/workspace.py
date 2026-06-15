@@ -136,9 +136,18 @@ def ws_read(slug: str, filepath: str) -> str:
         return f"File not found: {filepath}\nFiles with that name:\n{result}"
     try:
         content = target.read_text(errors="replace")
-        if len(content) > 6000:
+        # Files under 3000 chars go straight through — no compression needed
+        if len(content) <= 3000:
+            return content
+        # Large files: compress via 1.58-bit BitNet coprocessor (CPU, no VRAM used)
+        try:
+            from core.cpu_coprocessor import coprocessor
+            compressed = coprocessor.compress_context(content, max_words=300)
+            header = f"[ws_read: {filepath} — {len(content)} chars compressed to {len(compressed)} chars by BitNet coprocessor]\n\n"
+            return header + compressed
+        except Exception as _ce:
+            # Coprocessor not ready yet — fall back to hard truncation
             return content[:6000] + f"\n... (truncated, {len(content)} total chars)"
-        return content
     except Exception as e:
         return f"Read failed: {e}"
 
@@ -182,8 +191,8 @@ def ws_write(slug: str, filepath: str, content: str) -> str:
     target = repo / filepath
     # Strip hardcoded absolute paths from file content before writing
     import re
-    content = re.sub(r"['"]?/home/[^\s'"\\,)]+['"]?", "'.'", content)
-    content = re.sub(r"['"]?/root/[^\s'"\\,)]+['"]?", "'.'", content)
+    content = re.sub(r"/home/[^\s,)\"']+", ".", content)
+    content = re.sub(r"/root/[^\s,)\"']+", ".", content)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content)
     return f"✅ Written {len(content)} chars to {repo.name}/{filepath}"

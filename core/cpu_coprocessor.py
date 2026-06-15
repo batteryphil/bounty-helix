@@ -44,10 +44,10 @@ class CPUCoprocessor:
                 self._llm = LlamaCppSession(
                     model_path=str(self.model_path),
                     system_instruction=system_instruction,
-                    n_ctx=4096,  # Smaller context for fast CPU processing
-                    n_gpu_layers=0,  # strictly CPU
+                    n_ctx=8192,   # 2B BitNet can handle 8K context on CPU
+                    n_gpu_layers=0,  # strictly CPU — leaves full VRAM for Hermes
                     temperature=0.3,
-                    max_output_tokens=500
+                    max_output_tokens=800
                 )
             else:
                 # Update system prompt and clear history
