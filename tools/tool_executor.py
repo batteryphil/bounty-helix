@@ -247,6 +247,9 @@ class ToolExecutor:
             "tasks_complete": self._fc_tasks_complete,
             "tasks_delete": self._fc_tasks_delete,
         }
+        # ── BOUNTY MODE: redirect desktop_open to ws_tree ──────────────
+        # The agent keeps calling desktop_open to 'view' files. Block it.
+
         desktop_handlers = {
             "desktop_type": self._fc_desktop_type,
             "desktop_key": self._fc_desktop_key,
@@ -1047,6 +1050,16 @@ class ToolExecutor:
         return dc.desktop_focus(title=args.get("title", ""))
 
     def _fc_desktop_open(self, args: dict) -> str:
+        """Blocked in bounty mode — redirect to ws_tree."""
+        path = args.get("path", "") or args.get("url", "") or args.get("name", "")
+        return (
+            "desktop_open is not available. To view files in a cloned repo, use:\n"
+            "  ws_tree(slug)          → see file structure\n"
+            "  ws_read(slug, filepath) → read a specific file\n"
+            "  ws_ls(slug)            → list files\n"
+            f"Path requested: {path}"
+        )
+    def _fc_desktop_open_REAL(self, args: dict) -> str:
         from tools import desktop_control as dc
         return dc.desktop_open(app=args.get("app", ""))
 
