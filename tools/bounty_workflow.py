@@ -218,13 +218,9 @@ def bounty_write_patch(slug: str = "", content: str = "", repo: str = "", issue_
     sol_dir = _solution_dir(slug, "active")
     if not sol_dir.exists():
         return f"No active solution for '{slug}'. Run bounty_claim() first."
-    # Auto-fix: strip hardcoded absolute paths — replace with relative equivalents
-    # This catches the model writing /home/user/.../workspace/repo/file.py
-    abs_path_pattern = re.compile(r'/[\w./\-]*/workspace/[\w\-]+_([\w\-]+)/([\w./\-]*)')
-    content = abs_path_pattern.sub(r'./', content)
-    # Also strip any remaining /home/... paths
-    content = re.sub(r"['"]?/home/[^\s'"\,)]+['"]?", "'.'", content)
-    content = re.sub(r"['"]?/root/[^\s'"\,)]+['"]?", "'.'", content)
+    # Auto-fix: strip hardcoded absolute paths before saving
+    content = re.sub(r"/home/[^\s\"',)\\]+", ".", content)
+    content = re.sub(r"/root/[^\s\"',)\\]+", ".", content)
 
     (sol_dir / "PATCH.diff").write_text(content)
     logger.info(f"[BOUNTY] PATCH.diff written for {slug}")
