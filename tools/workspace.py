@@ -24,31 +24,17 @@ SOLUTIONS = PROJ / "solutions"
 
 def _repo_dir(slug: str) -> Path | None:
     """Find the cloned repo directory for a bounty slug or repo name."""
-    if not WORKSPACE.exists():
-        # Last resort: pick the workspace dir with the most slug chars in common
-    best, best_score = None, 0
-    slug_lower = slug.lower().replace("-","").replace("_","")
-    for d in candidates:
-        if not d.is_dir():
-            continue
-        dname = d.name.lower().replace("-","").replace("_","")
-        score = sum(1 for c in dname if c in slug_lower)
-        if score > best_score:
-            best, best_score = d, score
-    if best and best_score > 5:
-        return best
-    return None
-    if not slug:
+    if not slug or not WORKSPACE.exists():
         return None
-    # Accept "owner/repo" format directly
+    # Normalise slug → underscore-separated base
     normalized = slug.replace("/", "_").replace("-", "_")
     slug_base = slug.rsplit("-issue-", 1)[0].replace("-", "_", 1) if "-issue-" in slug else normalized
     candidates = list(WORKSPACE.iterdir())
-    # Exact name match
+    # 1. Exact name match
     for d in candidates:
         if d.is_dir() and d.name == slug_base:
             return d
-    # Partial match — any workspace dir whose name contains key parts
+    # 2. Partial match — workspace dir name contains all key parts
     for d in candidates:
         if not d.is_dir():
             continue
@@ -56,10 +42,21 @@ def _repo_dir(slug: str) -> Path | None:
         sbase = slug_base.lower()
         if sbase in dname or dname in sbase:
             return d
-        # Try matching the repo owner+name ignoring case/separators
         parts = [p for p in sbase.split("_") if len(p) > 2]
-        if all(p in dname for p in parts):
+        if parts and all(p in dname for p in parts):
             return d
+    # 3. Fuzzy fallback — most slug chars in common
+    slug_lower = slug.lower().replace("-", "").replace("_", "")
+    best, best_score = None, 0
+    for d in candidates:
+        if not d.is_dir():
+            continue
+        dname = d.name.lower().replace("-", "").replace("_", "")
+        score = sum(1 for c in dname if c in slug_lower)
+        if score > best_score:
+            best, best_score = d, score
+    if best and best_score > 5:
+        return best
     return None
 
 
