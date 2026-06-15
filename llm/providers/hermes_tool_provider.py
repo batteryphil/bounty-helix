@@ -28,10 +28,17 @@ MODEL_ID  = "NousResearch/Hermes-3-Llama-3.1-8B"
 import os as _os
 _PROJECT_CACHE = str(Path(__file__).resolve().parents[3] / "hf_cache")
 _DATA_CACHE    = "/data/hf_cache/hf_cache"
-# Prefer /data volume (15GB Hermes weights live there); fall back to project cache
-HF_CACHE = _DATA_CACHE if _os.path.isdir(
-    _os.path.join(_DATA_CACHE, "models--NousResearch--Hermes-3-Llama-3.1-8B")
-) else _PROJECT_CACHE
+_HF_DEFAULT    = _os.path.expanduser("~/.cache/huggingface/hub")
+
+# Prefer /data volume; fall back to project cache; then default HF cache.
+# Covers power-cycle reboots where /data is not yet remounted.
+def _pick_cache() -> str:
+    for path in [_DATA_CACHE, _PROJECT_CACHE, _HF_DEFAULT]:
+        if _os.path.isdir(_os.path.join(path, "models--NousResearch--Hermes-3-Llama-3.1-8B")):
+            return path
+    return _HF_DEFAULT
+
+HF_CACHE = _pick_cache()
 
 SYSTEM_PROMPT = (
     "You are Helix, an autonomous AI agent operating in opportunity-discovery and execution mode.\n\n"
