@@ -180,6 +180,10 @@ def ws_write(slug: str, filepath: str, content: str) -> str:
     if not repo:
         return f"No repo found for '{slug}'. Run bounty_clone_repo(repo) first."
     target = repo / filepath
+    # Strip hardcoded absolute paths from file content before writing
+    import re
+    content = re.sub(r"['"]?/home/[^\s'"\\,)]+['"]?", "'.'", content)
+    content = re.sub(r"['"]?/root/[^\s'"\\,)]+['"]?", "'.'", content)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content)
     return f"✅ Written {len(content)} chars to {repo.name}/{filepath}"
