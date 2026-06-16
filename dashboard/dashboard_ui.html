@@ -100,6 +100,11 @@
                 <i class="fa-solid fa-layer-group text-slate-400 text-xs"></i>
                 <span class="text-sm mono text-slate-300">LoRA Gen: <span id="lora-gen" class="text-purple-400 font-bold">0</span></span>
             </div>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-code-pull-request text-slate-400 text-xs"></i>
+                <span class="text-sm mono text-slate-300">PRs: <span id="status-submissions" class="text-emerald-400 font-bold">0</span></span>
+            </div>
         </div>
     </header>
 
@@ -177,6 +182,36 @@
 
         <!-- Middle Column: Cognitive Stream -->
         <div class="col-span-12 lg:col-span-5 space-y-6">
+            <!-- Active Target -->
+            <div class="glass-panel p-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center border border-rose-500/30">
+                        <i class="fa-solid fa-crosshairs text-rose-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Active Target</div>
+                        <div id="active-bounty-title" class="text-sm text-white font-medium mt-0.5 truncate max-w-xs">Searching...</div>
+                        <div id="active-bounty-repo" class="text-[11px] text-slate-500 mono mt-0.5">No active bounty</div>
+                    </div>
+                </div>
+                <!-- USD reward badge -->
+                <div id="active-bounty-reward-wrap" class="flex-shrink-0 ml-3 hidden">
+                    <div id="active-bounty-reward"
+                         class="px-3 py-1.5 rounded-lg text-sm font-bold mono border
+                                bg-emerald-500/15 border-emerald-500/40 text-emerald-300
+                                shadow-[0_0_12px_rgba(52,211,153,0.15)] transition-all">
+                        $0
+                    </div>
+                    <div class="text-[9px] text-slate-500 text-center mt-0.5 uppercase tracking-widest">reward</div>
+                </div>
+                <div id="active-bounty-unfunded" class="flex-shrink-0 ml-3 hidden">
+                    <div class="px-3 py-1.5 rounded-lg text-xs font-medium mono border
+                               bg-slate-700/40 border-slate-600/40 text-slate-500">
+                        Unfunded
+                    </div>
+                </div>
+            </div>
+
             <!-- Recent Think Blocks -->
             <div class="glass-panel p-5 flex flex-col h-full" style="max-height: calc(100vh - 7rem);">
                 <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center justify-between">
@@ -368,6 +403,33 @@
                 document.getElementById('status-indicator').classList.replace('bg-red-500', 'bg-green-500');
                 if (data.state) document.getElementById('status-state').textContent = data.state;
                 if (data.pulse) document.getElementById('status-pulse').textContent = data.pulse;
+                
+                if (data.submissions !== undefined) document.getElementById('status-submissions').textContent = data.submissions;
+
+                if (data.active_bounty) {
+                    const b = data.active_bounty;
+                    document.getElementById('active-bounty-title').textContent = b.title || "(untitled)";
+                    document.getElementById('active-bounty-repo').textContent = `${b.repo}#${b.issue}`;
+
+                    // Reward badge
+                    const raw = (b.reward_estimate || '').trim();
+                    const hasFunds = raw && raw !== '$0' && raw !== '0' && raw !== '';
+                    const rewardWrap = document.getElementById('active-bounty-reward-wrap');
+                    const unfunded   = document.getElementById('active-bounty-unfunded');
+                    if (hasFunds) {
+                        document.getElementById('active-bounty-reward').textContent = raw;
+                        rewardWrap.classList.remove('hidden');
+                        unfunded.classList.add('hidden');
+                    } else {
+                        rewardWrap.classList.add('hidden');
+                        unfunded.classList.remove('hidden');
+                    }
+                } else {
+                    document.getElementById('active-bounty-title').textContent = "Idle";
+                    document.getElementById('active-bounty-repo').textContent = "No active bounty";
+                    document.getElementById('active-bounty-reward-wrap').classList.add('hidden');
+                    document.getElementById('active-bounty-unfunded').classList.add('hidden');
+                }
                 
                 if (data.beliefs && data.beliefs.categories) {
                     document.getElementById('belief-total').textContent = data.beliefs.total;

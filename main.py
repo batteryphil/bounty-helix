@@ -427,11 +427,11 @@ def setup_helix(data_dir: str = "data"):
         belief_store=belief_store,
         web_search=web_search,
         data_dir=data_path,
-        curiosity_interval=120.0,  # every 2 min when idle
+        curiosity_interval=600.0,  # every 10 min — was 2 min, too frequent for bounty work
     )
     curiosity.set_pulse_loop(pulse_loop)
     curiosity.start()
-    print("  Curiosity engine: started (2 min cycles, pauses when user active)")
+    print("  Curiosity engine: started (10 min cycles, pauses when user active)")
 
     # ── Auto-enable toolsets based on available credentials ──────────────
     # GitHub — enable if GITHUB_TOKEN is set
@@ -625,6 +625,23 @@ def main_loop():
     # Start the pulse loop in background
     pulse_loop.wake("system_boot")
     pulse_loop.start()
+
+    # Emit a mission-reset directive if no active bounties exist
+    import glob as _glob
+    _active = _glob.glob("solutions/active/*/index.json")
+    if not _active:
+        pulse_loop.emit("system", {
+            "content": (
+                "[MISSION RESET] No active bounty. Your previous mission (Rustchain) was abandoned "
+                "because it was a hardware mining task, not a code fix, and paid in RTC (not USD). "
+                "IMMEDIATELY call bounty_search() to find a new bounty that: "
+                "(1) requires writing or fixing code, "
+                "(2) pays in USD, USDC, or other fiat/stablecoin, "
+                "(3) is open and unclaimed. "
+                "Do NOT look at the Rustchain issue again."
+            ),
+            "source": "system_boot",
+        })
 
     # Give it a moment to run the first pulse
     time.sleep(1)

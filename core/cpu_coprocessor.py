@@ -25,11 +25,18 @@ class CPUCoprocessor:
                 cls._instance._initialized = False
             return cls._instance
 
-    def __init__(self, model_path: str = "models/coprocessor-0.5b.gguf"):
+    def __init__(self, model_path: str = ""):
         if self._initialized:
             return
-            
-        self.model_path = Path(__file__).parent.parent / model_path
+
+        # Prefer newly downloaded compatible model; fall back to legacy name
+        _base = Path(__file__).parent.parent / "models"
+        if model_path:
+            self.model_path = Path(__file__).parent.parent / model_path
+        elif (_base / "coprocessor-new.gguf").exists():
+            self.model_path = _base / "coprocessor-new.gguf"
+        else:
+            self.model_path = _base / "coprocessor-0.5b.gguf"
         self._llm: Optional[LlamaCppSession] = None
         self._model_lock = threading.Lock()
         
@@ -114,6 +121,40 @@ class CPUCoprocessor:
         except Exception as e:
             logger.error(f"[CPUCoprocessor] Belief extraction failed: {e}")
             return []
+
+    def inference_fallback(self, prompt: str, system: str = "", max_tokens: int = 512) -> str:
+        """Run a full inference pass on CPU when the GPU model OOMs.
+
+        This is the OOM escape hatch: when Hermes CUDA generate() throws
+        RuntimeError (out of memory), the pulse loop calls this method to
+        get a response via the 1.58-bit BitNet on CPU instead.
+        No VRAM used — pure CPU inference.
+
+        Args:
+            prompt:     The user/pulse message to respond to.
+            system:     System instruction (uses a compressed bounty prompt if empty).
+            max_tokens: Max tokens to generate (kept low to stay fast on CPU).
+        Returns:
+            The generated text response string.
+        """
+        if not self.model_path.exists():
+            logger.warning("[CPUCoprocessor] Model not found — cannot run inference fallback.")
+            return '{"name": "bounty_status", "arguments": {}}'  # safe no-op tool call
+
+        _sys = system or (
+            "You are Helix, an autonomous bounty agent. "
+            "Output a single tool call as JSON: {\"name\": \"tool_name\", \"arguments\": {}}. "
+            "Pick the most useful next action for completing the Rustchain bounty."
+        )
+        try:
+            llm = self._get_llm(system_instruction=_sys)
+            llm.max_output_tokens = max_tokens
+            response = llm.send_message(prompt)
+            logger.info(f"[CPUCoprocessor] OOM fallback inference OK ({len(response)} chars).")
+            return response.strip()
+        except Exception as e:
+            logger.error(f"[CPUCoprocessor] OOM fallback inference failed: {e}")
+            return '{"name": "bounty_status", "arguments": {}}'
 
 # Global singleton
 coprocessor = CPUCoprocessor()

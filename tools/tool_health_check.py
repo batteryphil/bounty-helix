@@ -1,28 +1,40 @@
 import os
 import json
 import pathlib
-import subprocess
-import sys
+import importlib
+import inspect
+from typing import Dict, Any
 
-def check_tool_health(tool_name, tool_module):
-    try:
-        module = __import__(tool_module)
-        result = module.check_health()
-        return f"{tool_name}: OK - {result}"
-    except Exception as e:
-        return f"{tool_name}: ERROR - {str(e)}"
+def load_tool(name: str) -> Dict[str, Any]:
+    module_path = f"{os.path.dirname(os.path.abspath(__file__))}/tools/{name}.py"
+    with open(module_path, "r") as file:
+        code = file.read()
+    tree = compile(code, filename=module_path, mode='exec')
+    loader = importlib.machinery.SourceFileLoader
+    namespace = {}
+    exec(compile(code, filename=module_path, mode='exec'), namespace)
+    return namespace
+
+def test_tool(name: str, namespace: Dict[str, Any]) -> bool:
+    test_function_name = "test_function"
+    if test_function_name in namespace:
+        namespace[test_function_name]()
+        return True
+    return False
 
 def main():
-    tools_dir = pathlib.Path(__file__).parent / "tools"
-    health_report = []
-
-    for tool_name in os.listdir(tools_dir):
-        if tool_name.endswith(".py") and not tool_name.startswith("_"):
-            tool_path = tools_dir / tool_name
-            tool_module = f"tools.{tool_name[:-3]}"
-            health_report.append(check_tool_health(tool_name, tool_module))
-
-    print(json.dumps({"health_report": health_report}, indent=2))
+    tools = os.listdir(f"{os.path.dirname(os.path.abspath(__file__))}/tools")
+    results = {}
+    for tool in tools:
+        if tool.endswith(".py"):
+            name = tool[:-3]
+            try:
+                namespace = load_tool(name)
+                is_tested = test_tool(name, namespace)
+                results[name] = {"status": "pass" if is_tested else "fail"}
+            except Exception as e:
+                results[name] = {"status": "fail", "error": str(e)}
+    print(json.dumps(results, indent=2))
 
 if __name__ == "__main__":
     main()

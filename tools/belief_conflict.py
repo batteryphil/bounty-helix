@@ -3,16 +3,30 @@ import os
 from pathlib import Path
 from typing import List, Tuple
 
-def load_beliefs(filename: str) -> List[Tuple[str, float]]:
+def load_beliefs(filename: str) -> List[dict]:
     with open(filename, 'r') as f:
-        beliefs = json.load(f)
-    return [(belief['statement'], belief['confidence']) for belief in beliefs if belief['confidence'] > 0.8]
+        return json.load(f)
 
-def find_conflicts(beliefs: List[Tuple[str, float]]) -> List[Tuple[Tuple[str, float], Tuple[str, float]]]:
+def belief_conflicts(beliefs: List[dict], confidence_threshold: float) -> List[Tuple[int, int]]:
     conflicts = []
-    for i, (belief1, _) in enumerate(beliefs):
-        for j, (belief2, _) in enumerate(beliefs[i+1:]):
-            if belief1[0] != belief2[0] and belief1[0] != 'None' and belief2[0] != 'None':
-                if 'or' in belief1[0].lower() or 'or' in belief2[0].lower() or 'and' in belief1[0].lower() or 'and' in belief2[0].lower():
-                    conflicts.append((belief1, belief2))
+    for i, belief1 in enumerate(beliefs):
+        for j, belief2 in enumerate(beliefs[i+1:]):
+            if belief1['confidence'] > confidence_threshold and belief2['confidence'] > confidence_threshold:
+                if belief1['statement'] != belief2['statement'] and belief1['statement'] != f"NOT {belief2['statement']}":
+                    conflicts.append((belief1['id'], belief2['id']))
     return conflicts
+
+def resolve_conflict(beliefs: List[dict], conflict: Tuple[int, int]) -> str:
+    conflict1 = next(belief for belief in beliefs if belief['id'] == conflict[0])
+    conflict2 = next(belief for belief in beliefs if belief['id'] == conflict[1])
+    if conflict1['confidence'] > conflict2['confidence']:
+        return f"Revisit source data for belief with ID {conflict2['id']} as it has lower confidence."
+    else:
+        return f"Reevaluate confidence threshold for belief with ID {conflict1['id']} as it has high confidence."
+
+def main():
+    filename = 'beliefs.json'
+    confidence_threshold = 0.8
+    
+    beliefs = load_beliefs(filename)
+    conflicts = belief_conflicts(beliefs, confidence_threshold)

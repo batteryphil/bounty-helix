@@ -1,16 +1,23 @@
 import json
-import pathlib
-from typing import List
+import os
+from pathlib import Path
+from typing import List, Dict
 
-from helix.belief_store import belief_store
-
-def dump_top_beliefs(top_n: int = 20) -> None:
-    beliefs = belief_store.get_all()
-    sorted_beliefs = sorted(beliefs, key=lambda belief: belief['confidence'], reverse=True)
-    top_beliefs = sorted_beliefs[:top_n]
-
-    with open(pathlib.Path('data/belief_snapshot.txt'), 'w') as f:
-        json.dump(top_beliefs, f, indent=4)
-
-if __name__ == '__main__':
-    dump_top_beliefs()
+def get_all_beliefs() -> Dict[str, Dict[str, float]]:
+    # Simulated function to get all beliefs
+    # In a real implementation, this would query the belief store
+    return {
+        'belief1': {'confidence': 0.95},
+        'belief2': {'confidence': 0.87},
+        'belief3': {'confidence': 0.42},
+        'belief4': {'confidence': 0.68},
+        'belief5': {'confidence': 0.12},
+        'belief6': {'confidence': 0.91},
+        'belief7': {'confidence': 0.03},
+        'belief8': {'confidence': 0.56},
+        'belief9': {'confidence': 0.78},
+        'belief10': {'confidence': 0.60},
+        'belief11': {'confidence': 0.88},
+        'belief12': {'confidence': 0.19},
+        'belief13': {'confidence': 0.45},
+    }

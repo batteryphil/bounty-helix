@@ -133,6 +133,12 @@ class PulseLoop:
         # Load persisted pulse count so it's continuous across restarts
         self._pulse_count = self._load_pulse_count()
         self._previous_thoughts = ""
+        try:
+            if os.path.exists("data/last_thought.txt"):
+                with open("data/last_thought.txt", "r") as f:
+                    self._previous_thoughts = f.read().strip()
+        except Exception:
+            pass
         self._last_event_time = 0
 
         # 3-tier activity tracking
@@ -782,29 +788,31 @@ class PulseLoop:
         # 5. Parse output for action tags
         self._parse_output(thought)
 
-        # 5a-fix. Belief-only detection — if Jamba output ONLY a <belief> tag
-        # and made no tool calls, it wasted a full inference cycle ruminating.
-        # Inject a correction nudge so next pulse it takes an actual action.
+        # 5a-fix. Idle/Chatbot fallback detection
+        # If the LLM didn't call any tools and didn't use an action tag, it is idling.
         _tool_calls_made = []
         if hasattr(self._chat, 'get_last_tool_calls'):
             _tool_calls_made = self._chat.get_last_tool_calls()
-        if (not _tool_calls_made and thought
-                and thought.strip().startswith('<belief>')
-                and thought.strip().endswith(('</belief>', '|eom|>', '<|eom|>'))):
+        if not _tool_calls_made and thought:
             import re as _re
-            _belief_text = _re.sub(r'<[^>]+>', '', thought).strip()
-            logger.warning(
-                f"[pulse] Belief-only response detected (no tool call made). "
-                f"Belief: {_belief_text[:80]!r} — injecting correction nudge."
+            action_tag_pat = _re.compile(
+                r'\[(SEARCH|READ_FILE|WRITE_FILE|WRITE|RECALL|MEMORY_RECALL)\b|<tool_call>',
+                _re.IGNORECASE
             )
-            self.emit("correction", {
-                "message": (
-                    "Your last response was a belief statement only — no tool was called. "
-                    "Beliefs are secondary to action. You MUST call a tool this pulse. "
-                    "Use search(), read_file(), write_file(), memory_recall(), or any other tool. "
-                    "Do NOT output another <belief> tag as your entire response."
+            if not action_tag_pat.search(thought):
+                _idle_text = thought.strip()[:80].replace('\n', ' ')
+                logger.warning(
+                    f"[pulse] Idle/Chatbot response detected (no tool call made). "
+                    f"Excerpt: {_idle_text!r} — injecting correction nudge."
                 )
-            })
+                self.emit("correction", {
+                    "message": (
+                        "You did not call any tools. You are an autonomous agent, not a chatbot. "
+                        "Do NOT wait for user input or ask for instructions. "
+                        "You MUST actively call a tool (like ws_tree, ws_read, bounty_search, etc) "
+                        "every pulse to make progress on your mission. Beliefs and monologue are secondary to action."
+                    )
+                })
 
 
 
@@ -873,6 +881,12 @@ class PulseLoop:
 
         # 8. Carry forward
         self._previous_thoughts = thought[-500:] if thought else ""
+        try:
+            os.makedirs("data", exist_ok=True)
+            with open("data/last_thought.txt", "w") as f:
+                f.write(self._previous_thoughts)
+        except Exception:
+            pass
 
         # 9. Notify callback
         if self._thought_callback:
@@ -1039,6 +1053,17 @@ class PulseLoop:
         except Exception:
             pass
 
+        # ── Active Mission Injection ─────────────────────────────────────
+        try:
+            active_dir = Path("solutions/active")
+            if active_dir.exists():
+                active_bounties = [d.name for d in active_dir.iterdir() if d.is_dir()]
+                if active_bounties:
+                    bounty_list = ", ".join(active_bounties)
+                    parts.append(f"\n[ACTIVE MISSION] You have active claimed bounties: {bounty_list}. Resume your workflow (ws_tree, ws_read, ws_diff) on these immediately.")
+        except Exception:
+            pass
+
         # Token warning (informational, not a hard reset)
         if self._token_warning:
             parts.append(self._token_warning)
@@ -1074,7 +1099,7 @@ class PulseLoop:
         # mandate_interval is initialized once in __init__ (see below).
         # mandate_history is a deque of bools tracking mandate_used per pulse.
         if not hasattr(self, '_mandate_interval'):
-            self._mandate_interval = 3          # default: every 3rd pulse
+            self._mandate_interval = 1          # force tool call every pulse until LoRA loaded
         if not hasattr(self, '_mandate_history'):
             from collections import deque as _deque
             self._mandate_history = _deque(maxlen=20)
@@ -1332,6 +1357,7 @@ class PulseLoop:
             "ALL actions (replying, journaling, noting, terminal, searching, etc.) "
             "are handled natively via the function calling API. "
             "Use the tools provided to you. They will execute automatically.\n"
+            "CRITICAL: If you get stuck on a coding problem, encounter an unfamiliar error, or need advice on how to proceed, ALWAYS use the `google_search` tool to get free AI advice from Google's search overview. Do not guess.\n"
         )
 
         return "\n".join(parts)

@@ -97,6 +97,16 @@ def create_session(
             tool_executor=tool_executor,
         )
 
+    if config.provider_type == "qwen_gguf":
+        from llm.providers.qwen_gguf_provider import QwenGGUFSession
+        return QwenGGUFSession(
+            system_instruction=system_instruction,
+            tool_declarations=tool_declarations,
+            tool_executor=tool_executor,
+            temperature=config.temperature,
+            model_path=config.model,
+        )
+
     if config.provider_type == "mistral_tool":
         from llm.providers.mistral_tool_provider import MistralToolSession
         return MistralToolSession(
@@ -179,7 +189,20 @@ def detect_available_provider() -> Optional[ProviderConfig]:
     _here    = os.path.dirname(os.path.abspath(__file__))
     _project = os.path.normpath(os.path.join(_here, "..", "..", ".."))
 
-    # 0. Hermes-3-Llama-3.1-8B — #1 priority.
+    # 0. Qwen2.5-7B-Instruct GGUF — #1 priority.
+    #    Native tool calling, runs completely on CPU via llama.cpp
+    qwen_gguf_path = os.path.join(_project, "hf_cache", "qwen2.5-7b", "qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf")
+    if os.path.exists(qwen_gguf_path):
+        logger.info(f"Auto-detected Qwen2.5-7B-Instruct GGUF at {qwen_gguf_path} — CPU inference active")
+        return ProviderConfig(
+            provider_type="qwen_gguf",
+            model=qwen_gguf_path,
+            context_window=8192,
+            temperature=0.7,
+            max_output_tokens=512,
+        )
+
+    # 1. Hermes-3-Llama-3.1-8B — #2 priority.
     #    Best agentic tool calling, 4-bit NF4, GPU-resident ~5GB VRAM.
     #    NOTE: Falcon-H1-7B is downloaded but incompatible with RTX 3060 —
     #    its Mamba selective scan creates 3GB+ intermediate tensors that OOM.

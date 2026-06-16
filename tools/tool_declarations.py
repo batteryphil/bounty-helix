@@ -1262,9 +1262,16 @@ TOOLSET_MANAGEMENT_TOOLS = [
 # ── Bounty Workflow Tools ─────────────────────────────────────────────
 BOUNTY_WORKFLOW_TOOLS = [
     {
-        "name": "bounty_easy_search",
-        "description": "Search GitHub for easy bounties tagged 'good first issue' + 'bounty'. NO query parameter needed — just call bounty_easy_search() with no arguments.",
-        "parameters": {"type": "object", "properties": {"max_results": {"type": "integer", "description": "Max results, default 10"}}, "required": []},
+        "name": "bounty_search",
+        "description": "Search GitHub for open bounties. Returns real paid bounties with actual rewards. Excludes practice/fake repos.",
+        "parameters": {
+            "type": "object", 
+            "properties": {
+                "max_results": {"type": "integer", "description": "Max results, default 10"},
+                "difficulty": {"type": "string", "description": "'easy', 'medium', or 'hard'. Default 'medium'."}
+            }, 
+            "required": []
+        },
     },
     {
         "name": "issuehunt_top_bounties",

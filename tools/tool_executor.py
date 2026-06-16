@@ -178,7 +178,7 @@ class ToolExecutor:
             "issuehunt_search": self._fc_issuehunt_search,
             "issuehunt_top_bounties": self._fc_issuehunt_top_bounties,
             "issuehunt_save_opportunities": self._fc_issuehunt_save_opportunities,
-            "bounty_easy_search": self._fc_bounty_easy_search,
+            "bounty_search": self._fc_bounty_search,
             "ws_tree": lambda a: __import__("tools.workspace", fromlist=["ws_tree"]).ws_tree(a.get("slug",""), a.get("depth",2)),
             "ws_ls": lambda a: __import__("tools.workspace", fromlist=["ws_ls"]).ws_ls(a.get("slug",""), a.get("subdir","")),
             "ws_read": lambda a: __import__("tools.workspace", fromlist=["ws_read"]).ws_read(a.get("slug",""), a.get("filepath","")),
@@ -197,6 +197,9 @@ class ToolExecutor:
             "bounty_submit": self._fc_bounty_submit,
             "bounty_move": self._fc_bounty_move,
             "bounty_read_plan": self._fc_bounty_read_plan,
+            "bounty_read": self._fc_bounty_read,          # alias — LLM calls this naturally
+            "bounty_check_prs": self._fc_bounty_check_prs,
+            "bounty_reply_pr": self._fc_bounty_reply_pr,
             "github_issue": self._fc_github_issue,
             "github_create_issue": self._fc_github_create_issue,
             "github_comment": self._fc_github_comment,
@@ -341,6 +344,42 @@ class ToolExecutor:
             handlers=desktop_handlers,
             check_fn=_check_desktop,
             description="Desktop control — typing, clicking, screenshots",
+        )
+
+        # ── Direct-register alias tools not in BOUNTY_WORKFLOW_TOOLS declarations ──
+        # These are called by the LLM but were missing from the schema list.
+        # Register them directly so execute_function_call() finds them.
+        _minimal_schema = lambda name, desc: {
+            "name": name, "description": desc,
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        }
+        registry.register(
+            name="bounty_check_prs",
+            toolset="github",
+            schema=_minimal_schema("bounty_check_prs", "Check submitted PRs for maintainer questions."),
+            handler=self._fc_bounty_check_prs,
+            check_fn=_check_github,
+        )
+        registry.register(
+            name="bounty_reply_pr",
+            toolset="github",
+            schema=_minimal_schema("bounty_reply_pr", "Reply to a maintainer comment on a submitted PR."),
+            handler=self._fc_bounty_reply_pr,
+            check_fn=_check_github,
+        )
+        registry.register(
+            name="bounty_read",
+            toolset="github",
+            schema=_minimal_schema("bounty_read", "Read the plan/status for a bounty (alias for bounty_read_plan)."),
+            handler=self._fc_bounty_read,
+            check_fn=_check_github,
+        )
+        registry.register(
+            name="github_read_issue",
+            toolset="github",
+            schema=_minimal_schema("github_read_issue", "Read a GitHub issue by repo and issue number."),
+            handler=self._fc_github_issue,
+            check_fn=_check_github,
         )
 
     # ── Gemini Native Function Call Dispatch ──────────────────────────
@@ -801,9 +840,12 @@ class ToolExecutor:
         from tools.issuehunt import issuehunt_save_opportunities
         return issuehunt_save_opportunities(args.get("opportunities", []))
 
-    def _fc_bounty_easy_search(self, args: dict) -> str:
-        from tools.bounty_workflow import bounty_easy_search
-        return bounty_easy_search(args.get("max_results", 10))
+    def _fc_bounty_search(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_search
+        return bounty_search(
+            max_results=args.get("max_results", 10),
+            difficulty=args.get("difficulty", "medium")
+        )
 
     def _fc_bounty_status(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_status
@@ -811,9 +853,32 @@ class ToolExecutor:
 
     def _fc_bounty_claim(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_claim
-        return bounty_claim(args.get("repo",""), args.get("issue_num",0),
-            args.get("title",""), args.get("labels",""),
-            args.get("reward_estimate","$0"), args.get("difficulty","unknown"))
+        # Accept issue_num, issue_number, issue, or number — LLM uses all variants
+        raw_issue = (
+            args.get("issue_num")
+            or args.get("issue_number")
+            or args.get("issue")
+            or args.get("number")
+            or 0
+        )
+        try:
+            issue_num = int(raw_issue)
+        except (TypeError, ValueError):
+            return (
+                f"Error: bounty_claim requires a numeric issue number. "
+                f"Received '{raw_issue}'. "
+                f"Use: bounty_claim(repo='owner/repo', issue_num=1234)"
+            )
+        if issue_num == 0:
+            return (
+                "Error: bounty_claim requires a valid issue number (> 0). "
+                "Use: bounty_claim(repo='owner/repo', issue_num=1234)"
+            )
+        return bounty_claim(
+            args.get("repo", ""), issue_num,
+            args.get("title", ""), args.get("labels", ""),
+            args.get("reward_estimate", "$0"), args.get("difficulty", "unknown"),
+        )
 
     def _fc_bounty_clone_repo(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_clone_repo
@@ -821,27 +886,76 @@ class ToolExecutor:
 
     def _fc_bounty_run(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_run
-        return bounty_run(args.get("slug",""), args.get("command",""))
+        # Accept slug directly, or derive from repo/cwd aliases the LLM naturally uses
+        slug = args.get("slug", "") or args.get("repo", "") or args.get("cwd", "")
+        command = args.get("command", "")
+        if not slug:
+            return "Error: bounty_run requires 'slug' (or 'repo') and 'command' arguments."
+        return bounty_run(slug, command)
 
     def _fc_bounty_write_plan(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_write_plan
-        return bounty_write_plan(args.get("slug",""), args.get("content",""))
+        try:
+            issue_num = int(args.get("issue_num") or args.get("issue") or args.get("number") or 0)
+        except (TypeError, ValueError):
+            issue_num = 0
+        return bounty_write_plan(
+            slug=args.get("slug", ""),
+            content=args.get("content", "") or args.get("plan", ""),
+            repo=args.get("repo", ""),
+            issue_num=issue_num,
+        )
 
     def _fc_bounty_write_patch(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_write_patch
-        return bounty_write_patch(args.get("slug",""), args.get("content",""))
+        try:
+            issue_num = int(args.get("issue_num") or args.get("issue") or args.get("number") or 0)
+        except (TypeError, ValueError):
+            issue_num = 0
+        return bounty_write_patch(
+            slug=args.get("slug", ""),
+            content=args.get("content", "") or args.get("patch", "") or args.get("diff", ""),
+            repo=args.get("repo", ""),
+            issue_num=issue_num,
+        )
 
     def _fc_bounty_write_pr(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_write_pr
-        return bounty_write_pr(args.get("slug",""), args.get("content",""))
+        try:
+            issue_num = int(args.get("issue_num") or args.get("issue") or args.get("number") or 0)
+        except (TypeError, ValueError):
+            issue_num = 0
+        return bounty_write_pr(
+            slug=args.get("slug", ""),
+            content=args.get("content", "") or args.get("body", ""),
+            repo=args.get("repo", ""),
+            issue_num=issue_num,
+            title=args.get("title", ""),
+        )
 
     def _fc_bounty_apply_patch(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_apply_patch
-        return bounty_apply_patch(args.get("slug",""))
+        try:
+            issue_num = int(args.get("issue_num") or args.get("issue") or args.get("number") or 0)
+        except (TypeError, ValueError):
+            issue_num = 0
+        return bounty_apply_patch(
+            slug=args.get("slug", ""),
+            repo=args.get("repo", ""),
+            issue_num=issue_num,
+        )
 
     def _fc_bounty_submit(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_submit
-        return bounty_submit(args.get("slug",""))
+        try:
+            issue_num = int(args.get("issue_num") or args.get("issue") or args.get("number") or 0)
+        except (TypeError, ValueError):
+            issue_num = 0
+        return bounty_submit(
+            slug=args.get("slug", ""),
+            repo=args.get("repo", ""),
+            issue_num=issue_num,
+        )
 
     def _fc_bounty_move(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_move
@@ -849,11 +963,42 @@ class ToolExecutor:
 
     def _fc_bounty_read_plan(self, args: dict) -> str:
         from tools.bounty_workflow import bounty_read_plan
-        return bounty_read_plan(args.get("slug",""))
+        slug = args.get("slug", "") or args.get("bounty_id", "") or args.get("issue_number", "")
+        return bounty_read_plan(slug)
+
+    def _fc_bounty_read(self, args: dict) -> str:
+        """Alias for bounty_read_plan — LLM naturally calls 'bounty_read'."""
+        from tools.bounty_workflow import bounty_read_plan
+        slug = args.get("slug", "") or args.get("bounty_id", "") or args.get("issue_number", "")
+        return bounty_read_plan(slug)
+
+    def _fc_bounty_check_prs(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_check_prs
+        return bounty_check_prs()
+
+    def _fc_bounty_reply_pr(self, args: dict) -> str:
+        from tools.bounty_workflow import bounty_reply_pr
+        slug = args.get("slug", "") or args.get("bounty_id", "")
+        comment_id = int(args.get("comment_id", 0))
+        reply_body = args.get("reply_body", "") or args.get("body", "") or args.get("reply", "")
+        if not slug or not reply_body:
+            return "Error: bounty_reply_pr requires 'slug' and 'reply_body'."
+        return bounty_reply_pr(slug, comment_id, reply_body)
 
     def _fc_github_issue(self, args: dict) -> str:
         from tools import github_api as gh
-        return gh.github_read_issue(args.get("repo", ""), args.get("issue_number", 0))
+        # Accept 'issue_number', 'issue', or 'number' — LLM uses all three
+        issue_num = (
+            args.get("issue_number")
+            or args.get("issue")
+            or args.get("number")
+            or 0
+        )
+        try:
+            issue_num = int(issue_num)
+        except (TypeError, ValueError):
+            issue_num = 0
+        return gh.github_read_issue(args.get("repo", ""), issue_num)
 
     def _fc_github_create_issue(self, args: dict) -> str:
         from tools import github_api as gh
@@ -1064,8 +1209,13 @@ class ToolExecutor:
         return dc.desktop_open(app=args.get("app", ""))
 
     def _fc_desktop_screenshot(self, args: dict) -> str:
-        from tools import desktop_control as dc
-        return dc.desktop_screenshot()
+        """Blocked in bounty mode — no display available in headless daemon."""
+        return (
+            "desktop_screenshot is not available (headless mode). "
+            "To inspect a file or repo structure, use:\n"
+            "  ws_tree(slug)           → show file tree\n"
+            "  ws_read(slug, filepath) → read a specific file"
+        )
 
     # ── Toolset Management Handlers ───────────────────────────────────
 

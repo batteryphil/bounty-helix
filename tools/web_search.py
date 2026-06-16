@@ -119,10 +119,14 @@ class WebSearch:
         }
 
         try:
-            import requests
+            import primp
 
-            resp = requests.get(url, timeout=20, headers=headers, allow_redirects=True)
-            resp.raise_for_status()
+            # primp automatically impersonates a modern browser
+            client = primp.Client(impersonate="chrome_127")
+            # Convert requests params to primp params. Primp follows redirects by default.
+            resp = client.get(url, timeout=20, headers=headers)
+            if resp.status_code >= 400:
+                raise Exception(f"HTTP {resp.status_code} Error")
 
             content_type = resp.headers.get("Content-Type", "")
 
@@ -192,32 +196,36 @@ class WebSearch:
 
     def _try_archive_fallback(self, url: str, headers: dict, max_chars: int) -> Optional[str]:
         """Try to fetch an archived version from the Wayback Machine."""
-        import requests
+        import primp
         try:
+            client = primp.Client(impersonate="chrome_127")
             # Check if archive has a recent snapshot
             check_url = f"https://archive.org/wayback/available?url={url}"
-            check_resp = requests.get(check_url, timeout=8, headers=headers)
+            check_resp = client.get(check_url, timeout=8, headers=headers)
+            if check_resp.status_code >= 400:
+                return None
             data = check_resp.json()
             snapshot = data.get("archived_snapshots", {}).get("closest", {})
             if snapshot.get("available") and snapshot.get("url"):
                 archive_url = snapshot["url"]
-                resp = requests.get(archive_url, timeout=20, headers=headers)
-                resp.raise_for_status()
-                return self._extract_text(resp.text)[:max_chars]
+                resp = client.get(archive_url, timeout=20, headers=headers)
+                if resp.status_code < 400:
+                    return self._extract_text(resp.text)[:max_chars]
         except Exception as e:
             logger.debug(f"Archive.org fallback failed: {e}")
         return None
 
     def _try_amp_fallback(self, url: str, headers: dict, max_chars: int) -> Optional[str]:
         """Try Google's AMP cache for news articles."""
-        import requests
+        import primp
         from urllib.parse import urlparse
         try:
+            client = primp.Client(impersonate="chrome_127")
             parsed = urlparse(url)
             # AMP cache URL format: https://<domain-with-dashes>.cdn.ampproject.org/v/s/<url>
             domain_dashes = parsed.netloc.replace(".", "-")
             amp_url = f"https://{domain_dashes}.cdn.ampproject.org/v/s/{parsed.netloc}{parsed.path}"
-            resp = requests.get(amp_url, timeout=10, headers=headers)
+            resp = client.get(amp_url, timeout=10, headers=headers)
             if resp.status_code == 200:
                 return self._extract_text(resp.text)[:max_chars]
         except Exception as e:
@@ -251,7 +259,7 @@ class WebSearch:
 
     def _search_ddg_html(self, query: str, max_results: int) -> list[dict]:
         """Fallback: scrape DuckDuckGo HTML lite."""
-        import requests
+        import primp
 
         headers = {
             "User-Agent": (
@@ -260,13 +268,17 @@ class WebSearch:
             ),
         }
 
-        resp = requests.get(
-            "https://html.duckduckgo.com/html/",
-            params={"q": query},
+        client = primp.Client(impersonate="chrome_127")
+        # primp doesn't natively support params in the get() kwargs, so we construct the URL
+        import urllib.parse
+        encoded_query = urllib.parse.quote_plus(query)
+        resp = client.get(
+            f"https://html.duckduckgo.com/html/?q={encoded_query}",
             headers=headers,
             timeout=15,
         )
-        resp.raise_for_status()
+        if resp.status_code >= 400:
+            raise Exception(f"HTTP {resp.status_code} Error")
 
         results = []
 

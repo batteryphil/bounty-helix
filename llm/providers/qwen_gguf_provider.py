@@ -460,7 +460,7 @@ def _parse_tool_calls(text: str) -> Optional[List[Dict]]:
 
 # ── Session class ─────────────────────────────────────────────────────────────
 
-class HermesToolSession:
+class QwenGGUFSession:
     """
     Agentic chat session backed by Hermes-3-Llama-3.1-8B.
 
@@ -479,12 +479,16 @@ class HermesToolSession:
         tool_declarations: Optional[List[Dict]] = None,
         tool_executor=None,
         temperature: float = 0.7,
+        model_path: str = "/home/phil/.gemini/antigravity/scratch/analysis_project/hf_cache/qwen2.5-7b/qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf",
     ):
-        _load_engine()
-        self._model     = _model
-        self._tokenizer = _tokenizer
-        self._device    = _device
-
+        from llama_cpp import Llama
+        logger.info(f"Loading Qwen GGUF from {model_path} on CPU...")
+        self._llm = Llama(
+            model_path=model_path,
+            n_ctx=8192,
+            n_gpu_layers=0,
+            verbose=False,
+        )
         self._system    = system_instruction or SYSTEM_PROMPT
         self._tools     = tool_declarations or []
         self._executor  = tool_executor
@@ -607,9 +611,7 @@ class HermesToolSession:
         """Send a message; execute tools if needed; return final prose response."""
         # Block if LoRA training is consuming VRAM (VRAM_LOCK cleared by trainer).
         # Timeout 600s max — if training hangs, pulse loop resumes anyway.
-        if not VRAM_LOCK.is_set():
-            logger.info("[vram] Waiting for training to finish before inference...")
-            VRAM_LOCK.wait(timeout=600)
+
 
         # Extract clean user text (strip autonomous pulse telemetry)
         user_text = re.sub(r'<[^>]{1,40}>[^<]{0,500}</[^>]{1,40}>', '', message).strip()
@@ -663,24 +665,14 @@ class HermesToolSession:
                     "role": "user",
                     "content": "Before taking any action, analyze your state, memory, and objectives in natural language. You MUST write your reasoning as standard prose paragraph(s). DO NOT output any JSON tool calls in this step."
                 })
-                think_prompt = self._tokenizer.apply_chat_template(
-                    think_messages,          # no tools= → model writes prose only
-                    tokenize=False,
-                    add_generation_prompt=True,
+                # Create chat completion via llama.cpp
+                response = self._llm.create_chat_completion(
+                    messages=think_messages,
+                    max_tokens=think_budget,
+                    temperature=0.0, # greedy
                 )
-                think_ids = self._tokenizer(
-                    think_prompt, return_tensors="pt"
-                ).input_ids.to(self._device)
-                with torch.no_grad():
-                    think_out = self._model.generate(
-                        think_ids,
-                        max_new_tokens=think_budget,
-                        do_sample=False,          # greedy — deterministic plan
-                        pad_token_id=self._tokenizer.eos_token_id,
-                    )
-                think_text = self._tokenizer.decode(
-                    think_out[0][think_ids.shape[1]:], skip_special_tokens=True
-                ).strip()
+                think_text = response["choices"][0]["message"]["content"] or ""
+                think_text = think_text.strip()
                 logger.warning(f"HERMES THINK: {think_text[:200]!r}")
                 self._last_think_text = think_text   # expose for hook_ctx.think_block
 
@@ -710,84 +702,27 @@ class HermesToolSession:
         for loop_i in range(MAX_TOOL_LOOPS):
             try:
                 # Try with tools= first (Hermes-3 native function calling)
-                try:
-                    prompt = self._tokenizer.apply_chat_template(
-                        messages,
-                        tools=openai_tools,
-                        tokenize=False,
-                        add_generation_prompt=True,
-                    )
-                except Exception as te:
-                    # Fallback: no tools in template
-                    logger.warning(f"Template tools error: {te} — falling back to no tools")
-                    prompt = self._tokenizer.apply_chat_template(
-                        messages, tokenize=False, add_generation_prompt=True
-                    )
+                # For llama_cpp, we can just use create_chat_completion.
+                # However, to support mandate prefilling without writing a custom sampler,
+                # we will format the ChatML prompt manually.
+                prompt = ""
+                for m in messages:
+                    prompt += f"<|im_start|>{m['role']}\n{m['content']}<|im_end|>\n"
+                prompt += "<|im_start|>assistant\n"
 
-                # ── Mandate prefilling: force tool_call output ──────────────
-                # The model ignores text instructions to "call a tool" and
-                # defaults to its trained prose pattern ("As I reflect...").
-                # Solution: append <tool_call>\n to the prompt so the model's
-                # first generated token MUST be part of the tool call JSON.
-                _prefill_str = ""  # track for raw reconstruction
+                _prefill_str = ""
                 if is_mandate_pulse and loop_i == 0 and is_autonomous_pulse:
-                    # Prefill the start of the JSON block to force a tool call,
-                    # but let the model choose the tool name to preserve diversity.
                     _prefill_str = '<tool_call>\n{"name": "'
-                    prompt = prompt + _prefill_str
-                    logger.warning("[hermes] Mandate prefill: seeding open <tool_call>")
+                    prompt += _prefill_str
+                    logger.warning("[qwen] Mandate prefill: seeding open <tool_call>")
 
-                input_ids = self._tokenizer(
-                    prompt, return_tensors="pt"
-                ).input_ids.to(self._device)
-
-                with torch.no_grad():
-                    try:
-                        out = self._model.generate(
-                            input_ids,
-                            max_new_tokens=token_budget,
-                            do_sample=(True if is_mandate_pulse else not is_autonomous_pulse),
-                            temperature=(0.4 if is_mandate_pulse else self.temperature),
-                            pad_token_id=self._tokenizer.eos_token_id,
-                        )
-                    except (RuntimeError, torch.cuda.OutOfMemoryError) as _oom:
-                        logger.warning(
-                            f"[hermes] CUDA OOM on generate — delegating to 1.58-bit CPU coprocessor. "
-                            f"Error: {_oom}"
-                        )
-                        try:
-                            import gc
-                            torch.cuda.empty_cache()
-                            gc.collect()
-                        except Exception:
-                            pass
-                        # Delegate this pulse to the CPU coprocessor
-                        from core.cpu_coprocessor import coprocessor as _cpu
-                        _cpu_resp = _cpu.inference_fallback(
-                            prompt=message,
-                            system=self._system[:500],  # truncated to keep it fast
-                            max_tokens=256,
-                        )
-                        logger.warning(f"[hermes] CPU fallback response: {_cpu_resp[:120]!r}")
-                        # Return the fallback directly — skip the rest of the loop
-                        self._history.append({"role": "assistant", "content": _cpu_resp})
-                        return _cpu_resp
-                # ── Flush neural probe snapshot after generate ─────────────
-                try:
-                    from core.neural_probe import flush as _probe_flush
-                    _probe_flush(
-                        pulse=getattr(self, '_last_pulse', 0),
-                        token_count=int(out.shape[1] - input_ids.shape[1]),
-                    )
-                except Exception:
-                    pass
-                raw = self._tokenizer.decode(
-                    out[0][input_ids.shape[1]:], skip_special_tokens=False
-                ).strip()
-
-                # If we prefilled a partial tool_call, reconstruct the full string
-                # for the parser. The model only generates the JSON completion;
-                # prepend the known prefix so _parse_tool_calls sees a full tag.
+                response = self._llm.create_completion(
+                    prompt=prompt,
+                    max_tokens=token_budget,
+                    temperature=(0.4 if is_mandate_pulse else self.temperature),
+                    stop=["<|im_end|>"],
+                )
+                raw = response["choices"][0]["text"].strip()
                 raw_for_parse = (_prefill_str + raw) if _prefill_str else raw
 
             except Exception as e:

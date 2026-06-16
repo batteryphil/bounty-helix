@@ -5,19 +5,21 @@ from pathlib import Path
 
 def search_knowledge(query):
     with jsonlines.open('curiosity_knowledge.jsonl', 'r') as f:
+        results = []
         for line in f:
             entry = json.loads(line)
-            if query in entry['text']:
-                yield entry
+            if any(query.lower() in str(entry['text']).lower() for query in query.split()):
+                results.append(entry)
+            if len(results) >= 3:
+                break
+        return results
 
 def main():
     query = input("Enter a search query: ")
-    results = list(search_knowledge(query))
-    if results:
-        for i, result in enumerate(results[:3], start=1):
-            print(f"Result {i}: {result['text']}")
-    else:
-        print("No matching results found.")
+    results = search_knowledge(query)
+    print("Top 3 relevant results:")
+    for i, result in enumerate(results, start=1):
+        print(f"{i}. {result['text']}")
 
 if __name__ == '__main__':
     main()

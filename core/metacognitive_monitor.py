@@ -61,7 +61,7 @@ class MetaSnapshot:
     top_failures: List[str]           # most frequent error patterns seen
     novel_belief_rate: float          # beliefs added per window (from belief store)
     composite_fitness: float          # 0.0–1.0 composite score
-    # Removed (Rev 3 peer review):
+    fitness: float = 0.5              # alias for composite_fitness
     #   task_completion_rate: was constant 0.5 (deadweight compressing variance)
     #   avg_response_len: penalized efficient tool calls vs verbose prose
 

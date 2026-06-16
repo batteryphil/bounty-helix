@@ -350,6 +350,36 @@ def read_status() -> Dict[str, Any]:
         except Exception:
             pass
 
+    submissions_count = 0
+    try:
+        sol_dir = BASE_DIR / "solutions"
+        for sub in ["submitted", "accepted", "rejected"]:
+            d = sol_dir / sub
+            if d.exists():
+                submissions_count += len([x for x in d.iterdir() if x.is_dir()])
+    except Exception:
+        pass
+
+    active_bounty = None
+    try:
+        active_dir = BASE_DIR / "solutions" / "active"
+        if active_dir.exists():
+            newest_json = None
+            newest_time = 0
+            for d in active_dir.iterdir():
+                if d.is_dir():
+                    idx = d / "index.json"
+                    if idx.exists():
+                        mtime = idx.stat().st_mtime
+                        if mtime > newest_time:
+                            newest_time = mtime
+                            newest_json = idx
+            if newest_json:
+                with open(newest_json) as f:
+                    active_bounty = json.load(f)
+    except Exception:
+        pass
+
     return {
         "beliefs": stats,
         "omega": omega,
@@ -360,6 +390,8 @@ def read_status() -> Dict[str, Any]:
         "pid": pid,
         "tps": tps,
         "tps_last": tps_last,
+        "active_bounty": active_bounty,
+        "submissions": submissions_count,
     }
 
 
